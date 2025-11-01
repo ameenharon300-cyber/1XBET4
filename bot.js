@@ -1,6 +1,6 @@
 // ===================================================
 // 🚀 AI GOOL PREDICTOR ULTIMATE - VERSION 15.0
-// 👤 DEVELOPER: ISMAIL - @VIP_MFM 
+// 👤 DEVELOPER: AMIN-HARON - @VBNYFH 
 // 🔥 FEATURES: ADVANCED AI + 1XBET LOGIN + REAL-TIME PREDICTIONS
 // ===================================================
 
