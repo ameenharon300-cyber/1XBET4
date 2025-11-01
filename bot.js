@@ -15,7 +15,7 @@ const CONFIG = {
     
     // 🧠 AI SETTINGS - ADD YOUR AI API KEYS
     AI_APIS: {
-        GEMINI: "AIzaSyCxfSR72QQ7iJpdwEryNQr0GC_kitx1JCY", // ⬅️ Optional: Google Gemini
+        GEMINI: "AIzaSyCtjtT98-M5v6t8qICPSDw-1TLwPneyaQc", // ⬅️ Optional: Google Gemini
         OPENAI: "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", // ⬅️ Optional: OpenAI
         CUSTOM: "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"   // ⬅️ Optional: Any AI API
     },
