@@ -1,14 +1,28 @@
 {
-  "name": "telegram-ai-bot",
-  "version": "1.0.0",
-  "description": "Telegram bot powered by OpenAI API",
+  "name": "ai-goal-predictor",
+  "version": "3.0.0",
+  "description": "Advanced AI Goal Prediction System with 1xBet Login",
   "main": "bot.js",
-  "type": "module",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "dev": "node bot.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
+  "keywords": [
+    "ai",
+    "goal-prediction",
+    "football",
+    "1xbet",
+    "telegram-bot",
+    "smart-algorithm"
+  ],
+  "author": "AMIN HARON - @VBNYFH",
+  "license": "MIT",
   "dependencies": {
-    "openai": "^4.0.0",
-    "node-telegram-bot-api": "^0.61.0"
+    "telegraf": "^4.16.3",
+    "axios": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
