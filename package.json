@@ -1,6 +1,6 @@
 {
   "name": "ai-goal-predictor-pro",
-  "version": "8.2.0",
+  "version": "8.3.0",
   "description": "Advanced AI Goal Prediction System with Full Admin Panel",
   "main": "bot.js",
   "scripts": {
