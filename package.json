@@ -1,7 +1,7 @@
 {
   "name": "ai-goal-predictor-pro",
-  "version": "7.0.0",
-  "description": "Advanced AI Goal Prediction System with Subscription & Admin Panel",
+  "version": "8.0.0",
+  "description": "Advanced AI Goal Prediction System with Full Admin Panel",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
@@ -17,9 +17,9 @@
     "smart-algorithm",
     "subscription",
     "firebase",
-    "admin-panel"
+    "full-admin-panel"
   ],
-  "author": "AMIN-HARON - @GEMZGOOL",
+  "author": "AMIN - @GEMZGOOLBOT",
   "license": "MIT",
   "dependencies": {
     "telegraf": "^4.16.3",
