@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 8.2
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 8.3
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + SUBSCRIPTION SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v8.2...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v8.3...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -46,7 +46,7 @@ const CONFIG = {
         measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-18FYRTQMT9"
     },
     
-    VERSION: "8.2.0",
+    VERSION: "8.3.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL"
 };
@@ -111,7 +111,7 @@ const settingsDatabase = new Map();
 class GoalPredictionAI {
     constructor() {
         this.predictionHistory = new Map();
-        this.algorithmVersion = "8.2";
+        this.algorithmVersion = "8.3";
     }
 
     generateSmartPrediction(userId, matchContext = {}) {
@@ -239,6 +239,11 @@ class GoalPredictionAI {
 
 // 💾 DATABASE MANAGER
 class DatabaseManager {
+    constructor() {
+        this.settingsCache = null;
+        this.lastSettingsUpdate = null;
+    }
+
     async getUser(userId) {
         if (db) {
             try {
@@ -326,43 +331,74 @@ class DatabaseManager {
     }
 
     async getSettings() {
+        // استخدام الكاش إذا كان حديثاً
+        if (this.settingsCache && this.lastSettingsUpdate && 
+            (Date.now() - this.lastSettingsUpdate) < 30000) { // 30 ثانية كاش
+            return this.settingsCache;
+        }
+
+        let settings = null;
+        
         if (db) {
             try {
                 const settingsDoc = await db.collection('settings').doc('config').get();
                 if (settingsDoc.exists) {
-                    return settingsDoc.data();
+                    settings = settingsDoc.data();
                 } else {
                     // إنشاء الإعدادات الافتراضية
-                    const defaultSettings = {
+                    settings = {
                         prices: CONFIG.SUBSCRIPTION_PRICES,
                         payment_links: CONFIG.PAYMENT_LINKS,
                         updated_at: new Date().toISOString()
                     };
-                    await db.collection('settings').doc('config').set(defaultSettings);
-                    return defaultSettings;
+                    await db.collection('settings').doc('config').set(settings);
                 }
             } catch (error) {
                 console.error('Firebase error, using local storage:', error);
+                settings = null;
             }
         }
-        return settingsDatabase.get('config') || {
-            prices: CONFIG.SUBSCRIPTION_PRICES,
-            payment_links: CONFIG.PAYMENT_LINKS
-        };
+        
+        if (!settings) {
+            // استخدام التخزين المحلي
+            settings = settingsDatabase.get('config');
+            if (!settings) {
+                settings = {
+                    prices: CONFIG.SUBSCRIPTION_PRICES,
+                    payment_links: CONFIG.PAYMENT_LINKS,
+                    updated_at: new Date().toISOString()
+                };
+                settingsDatabase.set('config', settings);
+            }
+        }
+
+        // تحديث الكاش
+        this.settingsCache = settings;
+        this.lastSettingsUpdate = Date.now();
+        
+        return settings;
     }
 
     async updateSettings(newSettings) {
+        const updatedSettings = {
+            ...newSettings,
+            updated_at: new Date().toISOString()
+        };
+
         if (db) {
             try {
-                await db.collection('settings').doc('config').set({
-                    ...newSettings,
-                    updated_at: new Date().toISOString()
-                }, { merge: true });
+                await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
             } catch (error) {
                 console.error('Firebase error, using local storage:', error);
             }
         }
-        settingsDatabase.set('config', newSettings);
+        
+        // تحديث التخزين المحلي والكاش
+        settingsDatabase.set('config', updatedSettings);
+        this.settingsCache = updatedSettings;
+        this.lastSettingsUpdate = Date.now();
+        
+        return updatedSettings;
     }
 
     async getPayment(paymentId) {
@@ -902,11 +938,12 @@ async function handleUserStats(ctx, userData) {
 }
 
 async function handleSubscriptions(ctx, userData) {
-    const settings = await dbManager.getSettings();
-    const prices = settings.prices;
-    const payment_links = settings.payment_links;
-    
-    const subscriptionMessage = `
+    try {
+        const settings = await dbManager.getSettings();
+        const prices = settings.prices;
+        const payment_links = settings.payment_links;
+        
+        const subscriptionMessage = `
 💳 *باقات الاشتراك المتاحة*
 
 💰 *أسبوعي:* ${prices.week}$
@@ -927,9 +964,13 @@ async function handleSubscriptions(ctx, userData) {
 3. أرسل رقم حساب 1xBet (10 أرقام)
 4. أرسل صورة إثبات الدفع
 5. انتظر التفعيل من الإدارة
-    `;
+        `;
 
-    await ctx.replyWithMarkdown(subscriptionMessage, getSubscriptionKeyboard());
+        await ctx.replyWithMarkdown(subscriptionMessage, getSubscriptionKeyboard());
+    } catch (error) {
+        console.error('Subscriptions error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في جلب معلومات الاشتراكات*', getMainKeyboard());
+    }
 }
 
 async function handleSubscriptionSelection(ctx, userData, text) {
@@ -946,23 +987,28 @@ async function handleSubscriptionSelection(ctx, userData, text) {
         return;
     }
 
-    const settings = await dbManager.getSettings();
-    const prices = settings.prices;
-    const payment_links = settings.payment_links;
+    try {
+        const settings = await dbManager.getSettings();
+        const prices = settings.prices;
+        const payment_links = settings.payment_links;
 
-    ctx.session.paymentType = subscriptionType;
-    ctx.session.awaitingPaymentAccount = true;
+        ctx.session.paymentType = subscriptionType;
+        ctx.session.awaitingPaymentAccount = true;
 
-    await ctx.replyWithMarkdown(
-        `💳 *باقة ${text.replace('💰 ', '')}*\n\n` +
-        `💰 السعر: ${prices[subscriptionType]}$\n` +
-        `🔗 رابط الدفع: ${payment_links[subscriptionType]}\n\n` +
-        `📋 *خطوات الإكمال:*\n` +
-        `1. ادفع عبر الرابط أعلاه\n` +
-        `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
-        `3. أرسل صورة إثبات الدفع\n\n` +
-        `🔢 *الآن أرسل رقم حساب 1xBet المكون من 10 أرقام:*`
-    );
+        await ctx.replyWithMarkdown(
+            `💳 *باقة ${text.replace('💰 ', '')}*\n\n` +
+            `💰 السعر: ${prices[subscriptionType]}$\n` +
+            `🔗 رابط الدفع: ${payment_links[subscriptionType]}\n\n` +
+            `📋 *خطوات الإكمال:*\n` +
+            `1. ادفع عبر الرابط أعلاه\n` +
+            `2. أرسل رقم حساب 1xBet (10 أرقام)\n` +
+            `3. أرسل صورة إثبات الدفع\n\n` +
+            `🔢 *الآن أرسل رقم حساب 1xBet المكون من 10 أرقام:*`
+        );
+    } catch (error) {
+        console.error('Subscription selection error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة طلب الاشتراك*', getSubscriptionKeyboard());
+    }
 }
 
 async function handleSubscriptionStatus(ctx, userData) {
@@ -990,61 +1036,66 @@ async function handleSubscriptionStatus(ctx, userData) {
 }
 
 async function handlePaymentScreenshot(ctx, userId) {
-    const userData = await dbManager.getUser(userId);
-    const photo = ctx.message.photo[ctx.message.photo.length - 1];
-    const fileLink = await bot.telegram.getFileLink(photo.file_id);
-    const imageUrl = fileLink.href;
-
-    const settings = await dbManager.getSettings();
-    const prices = settings.prices;
-
-    // استخدام رقم الحساب من الجلسة إذا كان متوفراً
-    const accountNumber = ctx.session.paymentAccount || userData.onexbet;
-
-    const paymentData = {
-        user_id: userId,
-        onexbet: accountNumber,
-        screenshot_url: imageUrl,
-        amount: prices[ctx.session.paymentType],
-        subscription_type: ctx.session.paymentType,
-        username: userData.username,
-        timestamp: new Date().toISOString()
-    };
-
-    const paymentId = await dbManager.addPayment(paymentData);
-    
-    // إعلام الإدارة
     try {
-        await bot.telegram.sendMessage(
-            CONFIG.ADMIN_ID,
-            `🆕 *طلب دفع جديد*\n\n` +
-            `👤 المستخدم: ${userData.username}\n` +
-            `🔐 الحساب: ${accountNumber}\n` +
-            `💰 المبلغ: ${paymentData.amount}$\n` +
-            `📦 الباقة: ${ctx.session.paymentType}\n` +
-            `🆔 الرقم: ${paymentId}\n` +
-            `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
-            { parse_mode: 'Markdown' }
+        const userData = await dbManager.getUser(userId);
+        const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const fileLink = await bot.telegram.getFileLink(photo.file_id);
+        const imageUrl = fileLink.href;
+
+        const settings = await dbManager.getSettings();
+        const prices = settings.prices;
+
+        // استخدام رقم الحساب من الجلسة إذا كان متوفراً
+        const accountNumber = ctx.session.paymentAccount || userData.onexbet;
+
+        const paymentData = {
+            user_id: userId,
+            onexbet: accountNumber,
+            screenshot_url: imageUrl,
+            amount: prices[ctx.session.paymentType],
+            subscription_type: ctx.session.paymentType,
+            username: userData.username,
+            timestamp: new Date().toISOString()
+        };
+
+        const paymentId = await dbManager.addPayment(paymentData);
+        
+        // إعلام الإدارة
+        try {
+            await bot.telegram.sendMessage(
+                CONFIG.ADMIN_ID,
+                `🆕 *طلب دفع جديد*\n\n` +
+                `👤 المستخدم: ${userData.username}\n` +
+                `🔐 الحساب: ${accountNumber}\n` +
+                `💰 المبلغ: ${paymentData.amount}$\n` +
+                `📦 الباقة: ${ctx.session.paymentType}\n` +
+                `🆔 الرقم: ${paymentId}\n` +
+                `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (error) {
+            console.error('Error notifying admin:', error);
+        }
+
+        await ctx.replyWithMarkdown(
+            '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
+            `✅ الحساب: \`${accountNumber}\`\n` +
+            `✅ الباقة: ${ctx.session.paymentType}\n` +
+            `💰 المبلغ: ${paymentData.amount}$\n\n` +
+            '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
+            '⏰ عادةً خلال 24 ساعة\n\n' +
+            `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
+            getMainKeyboard()
         );
+
+        // تنظيف جلسة الدفع
+        ctx.session.paymentType = null;
+        ctx.session.awaitingPaymentAccount = false;
+        ctx.session.paymentAccount = null;
     } catch (error) {
-        console.error('Error notifying admin:', error);
+        console.error('Payment screenshot error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة صورة الدفع*', getMainKeyboard());
     }
-
-    await ctx.replyWithMarkdown(
-        '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
-        `✅ الحساب: \`${accountNumber}\`\n` +
-        `✅ الباقة: ${ctx.session.paymentType}\n` +
-        `💰 المبلغ: ${paymentData.amount}$\n\n` +
-        '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
-        '⏰ عادةً خلال 24 ساعة\n\n' +
-        `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
-        getMainKeyboard()
-    );
-
-    // تنظيف جلسة الدفع
-    ctx.session.paymentType = null;
-    ctx.session.awaitingPaymentAccount = false;
-    ctx.session.paymentAccount = null;
 }
 
 // 🔧 ADMIN HANDLERS - لوحة التحكم الكاملة
@@ -1502,7 +1553,7 @@ async function handleAdminSettings(ctx, text) {
 async function handleAdminPriceSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const prices = settings.prices;
+        const prices = settings.prices || CONFIG.SUBSCRIPTION_PRICES;
         
         const priceMessage = `
 💰 *الإعدادات الحالية*
@@ -1529,7 +1580,7 @@ async function handleAdminPriceSettings(ctx) {
 async function handleAdminPaymentLinks(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const payment_links = settings.payment_links;
+        const payment_links = settings.payment_links || CONFIG.PAYMENT_LINKS;
         
         const linksMessage = `
 🔗 *روابط الدفع الحالية*
@@ -1883,7 +1934,7 @@ async function handlePaymentLinkUpdate(ctx, text) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v8.2 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v8.3 is RUNNING!');
     console.log('🤖 Smart Algorithm Version:', goalAI.algorithmVersion);
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
