@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 7.0
-// 👤 DEVELOPER: AMIN HARON - @GEMZGOOL 
-// 🔥 FEATURES: SMART AI + SUBSCRIPTION SYSTEM + FIREBASE + ADMIN PANEL
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 8.0
+// 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
+// 🔥 FEATURES: SMART AI + SUBSCRIPTION SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v7.0...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v8.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -18,7 +18,7 @@ const CONFIG = {
         OPENAI: process.env.OPENAI_API_KEY || "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"
     },
 
-    // 💰 PRICING
+    // 💰 DEFAULT PRICING
     SUBSCRIPTION_PRICES: {
         week: 10,
         month: 30,
@@ -26,7 +26,7 @@ const CONFIG = {
         year: 250
     },
 
-    // 🔐 BINANCE PAY LINKS
+    // 🔐 DEFAULT PAYMENT LINKS
     PAYMENT_LINKS: {
         week: process.env.PAYMENT_WEEK || "https://binance.com/payment/weekly",
         month: process.env.PAYMENT_MONTH || "https://binance.com/payment/monthly", 
@@ -46,8 +46,9 @@ const CONFIG = {
         measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-18FYRTQMT9"
     },
     
-    VERSION: "7.0.0",
-    DEVELOPER: "AMIN @GEMZGOOL"
+    VERSION: "8.0.0",
+    DEVELOPER: "AMIN - @GEMZGOOLBOT",
+    CHANNEL: "@GEMZGOOL"
 };
 
 console.log('✅ Configuration loaded successfully');
@@ -68,7 +69,8 @@ app.get('/', (req, res) => {
         status: 'OK', 
         version: CONFIG.VERSION,
         timestamp: new Date().toISOString(),
-        message: 'AI Goal Predictor Bot is running...'
+        message: 'AI Goal Predictor Bot is running...',
+        developer: CONFIG.DEVELOPER
     });
 });
 
@@ -105,11 +107,11 @@ const userDatabase = new Map();
 const paymentDatabase = new Map();
 const settingsDatabase = new Map();
 
-// 🧠 SMART GOAL PREDICTION ENGINE (نفس الخوارزمية الذكية)
+// 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
         this.predictionHistory = new Map();
-        this.algorithmVersion = "7.0";
+        this.algorithmVersion = "8.0";
     }
 
     generateSmartPrediction(userId, matchContext = {}) {
@@ -326,24 +328,65 @@ class DatabaseManager {
     async getSettings() {
         if (db) {
             try {
-                const settingsDoc = await db.collection('settings').doc('prices').get();
-                return settingsDoc.exists ? settingsDoc.data() : CONFIG.SUBSCRIPTION_PRICES;
+                const settingsDoc = await db.collection('settings').doc('config').get();
+                if (settingsDoc.exists) {
+                    return settingsDoc.data();
+                } else {
+                    // إنشاء الإعدادات الافتراضية
+                    const defaultSettings = {
+                        prices: CONFIG.SUBSCRIPTION_PRICES,
+                        payment_links: CONFIG.PAYMENT_LINKS,
+                        updated_at: new Date().toISOString()
+                    };
+                    await db.collection('settings').doc('config').set(defaultSettings);
+                    return defaultSettings;
+                }
             } catch (error) {
                 console.error('Firebase error, using local storage:', error);
             }
         }
-        return settingsDatabase.get('prices') || CONFIG.SUBSCRIPTION_PRICES;
+        return settingsDatabase.get('config') || {
+            prices: CONFIG.SUBSCRIPTION_PRICES,
+            payment_links: CONFIG.PAYMENT_LINKS
+        };
     }
 
-    async updateSettings(newPrices) {
+    async updateSettings(newSettings) {
         if (db) {
             try {
-                await db.collection('settings').doc('prices').set(newPrices, { merge: true });
+                await db.collection('settings').doc('config').set({
+                    ...newSettings,
+                    updated_at: new Date().toISOString()
+                }, { merge: true });
             } catch (error) {
                 console.error('Firebase error, using local storage:', error);
             }
         }
-        settingsDatabase.set('prices', newPrices);
+        settingsDatabase.set('config', newSettings);
+    }
+
+    async getPayment(paymentId) {
+        if (db) {
+            try {
+                const paymentDoc = await db.collection('payments').doc(paymentId).get();
+                return paymentDoc.exists ? paymentDoc.data() : null;
+            } catch (error) {
+                console.error('Firebase error, using local storage:', error);
+            }
+        }
+        return paymentDatabase.get(paymentId) || null;
+    }
+
+    async getAllPayments() {
+        if (db) {
+            try {
+                const paymentsSnapshot = await db.collection('payments').get();
+                return paymentsSnapshot.docs.map(doc => doc.data());
+            } catch (error) {
+                console.error('Firebase error, using local storage:', error);
+            }
+        }
+        return Array.from(paymentDatabase.values());
     }
 }
 
@@ -360,7 +403,8 @@ bot.use(session({
         accountId: null,
         lastPrediction: null,
         paymentType: null,
-        adminMode: false
+        adminMode: false,
+        adminStep: null
     })
 }));
 
@@ -381,17 +425,42 @@ const getLoginKeyboard = () => {
 
 const getSubscriptionKeyboard = () => {
     return Markup.keyboard([
-        ['💰 أسبوعي - 10$', '💰 شهري - 30$'],
-        ['💰 3 أشهر - 80$', '💰 سنوي - 250$'],
+        ['💰 أسبوعي', '💰 شهري'],
+        ['💰 3 أشهر', '💰 سنوي'],
         ['🔙 الرجوع للقائمة']
     ]).resize();
 };
 
-const getAdminKeyboard = () => {
+const getAdminMainKeyboard = () => {
     return Markup.keyboard([
-        ['📊 إحصائيات النظام', '👥 قائمة المستخدمين'],
-        ['💰 طلبات الدفع', '⚙️ إعدادات الأسعار'],
-        ['🔙 الخروج من وضع الإدمن']
+        ['📊 إحصائيات النظام', '👥 إدارة المستخدمين'],
+        ['💰 طلبات الدفع', '⚙️ الإعدادات'],
+        ['📢 إرسال إشعار', '🔍 بحث عن مستخدم'],
+        ['🔙 الخروج من الإدمن']
+    ]).resize();
+};
+
+const getAdminUsersKeyboard = () => {
+    return Markup.keyboard([
+        ['📋 قائمة المستخدمين', '✅ المشتركين النشطين'],
+        ['🆓 المستخدمين المجانين', '📈 إحصائيات المستخدمين'],
+        ['🔙 رجوع']
+    ]).resize();
+};
+
+const getAdminPaymentsKeyboard = () => {
+    return Markup.keyboard([
+        ['📥 الطلبات المعلقة', '✅ الطلبات المقبولة'],
+        ['❌ الطلبات المرفوضة', '📋 كل الطلبات'],
+        ['🔙 رجوع']
+    ]).resize();
+};
+
+const getAdminSettingsKeyboard = () => {
+    return Markup.keyboard([
+        ['💰 تعديل الأسعار', '🔗 تعديل روابط الدفع'],
+        ['⚙️ الإعدادات العامة', '🔄 إعادة التعيين'],
+        ['🔙 رجوع']
     ]).resize();
 };
 
@@ -475,7 +544,8 @@ bot.start(async (ctx) => {
 ✅ تحليل حقيقي للمباريات
 ✅ نتائج فورية مع شرح مفصل
 
-💎 *المطور:* أمين - @GEMZGOOL
+💎 *المطور:* ${CONFIG.DEVELOPER}
+📢 *القناة:* ${CONFIG.CHANNEL}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
             `;
@@ -498,16 +568,19 @@ bot.on('text', async (ctx) => {
         const session = ctx.session;
         const userId = ctx.from.id.toString();
 
-        // 🔐 ADMIN COMMANDS
-        if (userId === CONFIG.ADMIN_ID && text === '/admin') {
-            ctx.session.adminMode = true;
-            await ctx.replyWithMarkdown('🔧 *وضع الإدمن مفعل*', getAdminKeyboard());
-            return;
-        }
+        // 🔐 ADMIN COMMANDS - للإدمن فقط
+        if (userId === CONFIG.ADMIN_ID) {
+            if (text === '/admin' || text === '🔐 لوحة التحكم') {
+                ctx.session.adminMode = true;
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔧 *مرحباً في لوحة التحكم*', getAdminMainKeyboard());
+                return;
+            }
 
-        if (session.adminMode) {
-            await handleAdminCommands(ctx, text);
-            return;
+            if (session.adminMode) {
+                await handleAdminCommands(ctx, text);
+                return;
+            }
         }
 
         // 🔐 زر إدخال رقم الحساب
@@ -556,7 +629,9 @@ bot.on('text', async (ctx) => {
                     subscription_type: 'none',
                     subscription_start_date: null,
                     subscription_end_date: null,
-                    joined_at: new Date().toISOString()
+                    joined_at: new Date().toISOString(),
+                    total_predictions: 0,
+                    correct_predictions: 0
                 };
 
                 await dbManager.saveUser(userId, userData);
@@ -614,7 +689,8 @@ bot.on('text', async (ctx) => {
                     await ctx.replyWithMarkdown(
                         `🆘 *الدعم الفني*\n\n` +
                         `📞 للاستفسارات والدعم:\n` +
-                        `👤 @VIP_MFM\n\n` +
+                        `👤 ${CONFIG.DEVELOPER}\n` +
+                        `📢 ${CONFIG.CHANNEL}\n\n` +
                         `⏰ متاحون 24/7 لخدمتكم`,
                         getMainKeyboard()
                     );
@@ -625,7 +701,9 @@ bot.on('text', async (ctx) => {
                     break;
 
                 default:
-                    if (/^\d{10}$/.test(text)) {
+                    if (text.startsWith('💰 ')) {
+                        await handleSubscriptionSelection(ctx, userData, text);
+                    } else if (/^\d{10}$/.test(text)) {
                         await ctx.replyWithMarkdown(
                             '❌ *أنت مسجل بالفعل*\n\n' +
                             '🔐 يمكنك استخدام الأزرار في الأسفل للتحكم في النظام',
@@ -694,6 +772,7 @@ bot.on('photo', async (ctx) => {
             if (userData.subscription_status !== 'active') {
                 userData.free_attempts--;
             }
+            userData.total_predictions = (userData.total_predictions || 0) + 1;
             userData.lastPrediction = prediction;
             await dbManager.saveUser(userId, userData);
 
@@ -769,6 +848,7 @@ async function handlePrediction(ctx, userData, isImageAnalysis = false) {
     if (userData.subscription_status !== 'active' && !isImageAnalysis) {
         userData.free_attempts--;
     }
+    userData.total_predictions = (userData.total_predictions || 0) + 1;
     userData.lastPrediction = nextPrediction;
     await dbManager.saveUser(userId, userData);
 
@@ -818,26 +898,24 @@ async function handleUserStats(ctx, userData) {
 }
 
 async function handleSubscriptions(ctx, userData) {
-    const prices = await dbManager.getSettings();
+    const settings = await dbManager.getSettings();
+    const prices = settings.prices;
+    const payment_links = settings.payment_links;
     
     const subscriptionMessage = `
 💳 *باقات الاشتراك المتاحة*
 
 💰 *أسبوعي:* ${prices.week}$
 ⏰ مدة: 7 أيام
-🔗 ${CONFIG.PAYMENT_LINKS.week}
 
 💰 *شهري:* ${prices.month}$  
 ⏰ مدة: 30 يوماً
-🔗 ${CONFIG.PAYMENT_LINKS.month}
 
 💰 *3 أشهر:* ${prices.three_months}$
 ⏰ مدة: 90 يوماً
-🔗 ${CONFIG.PAYMENT_LINKS.three_months}
 
 💰 *سنوي:* ${prices.year}$
 ⏰ مدة: 365 يوماً
-🔗 ${CONFIG.PAYMENT_LINKS.year}
 
 📋 *طريقة الدفع:*
 1. اختر الباقة المناسبة
@@ -847,6 +925,41 @@ async function handleSubscriptions(ctx, userData) {
     `;
 
     await ctx.replyWithMarkdown(subscriptionMessage, getSubscriptionKeyboard());
+}
+
+async function handleSubscriptionSelection(ctx, userData, text) {
+    const subscriptionTypeMap = {
+        '💰 أسبوعي': 'week',
+        '💰 شهري': 'month', 
+        '💰 3 أشهر': 'three_months',
+        '💰 سنوي': 'year'
+    };
+
+    const subscriptionType = subscriptionTypeMap[text];
+    if (!subscriptionType) {
+        await ctx.replyWithMarkdown('❌ *اختيار غير صحيح*', getSubscriptionKeyboard());
+        return;
+    }
+
+    const settings = await dbManager.getSettings();
+    const prices = settings.prices;
+    const payment_links = settings.payment_links;
+
+    ctx.session.paymentType = subscriptionType;
+
+    await ctx.replyWithMarkdown(
+        `💳 *باقة ${text.replace('💰 ', '')}*\n\n` +
+        `💰 السعر: ${prices[subscriptionType]}$\n` +
+        `🔗 رابط الدفع: ${payment_links[subscriptionType]}\n\n` +
+        `📋 *خطوات الإكمال:*\n` +
+        `1. ادفع عبر الرابط أعلاه\n` +
+        `2. احفظ صورة إثبات الدفع\n` +
+        `3. أرسل الصورة هنا\n\n` +
+        `⏰ سيكون الاشتراك فعال خلال 24 ساعة`,
+        Markup.removeKeyboard()
+    );
+
+    await ctx.reply('📸 ⏳ بانتظار إرسال صورة إثبات الدفع...');
 }
 
 async function handleSubscriptionStatus(ctx, userData) {
@@ -879,11 +992,14 @@ async function handlePaymentScreenshot(ctx, paymentType, userId) {
     const fileLink = await bot.telegram.getFileLink(photo.file_id);
     const imageUrl = fileLink.href;
 
+    const settings = await dbManager.getSettings();
+    const prices = settings.prices;
+
     const paymentData = {
         user_id: userId,
         onexbet: userData.onexbet,
         screenshot_url: imageUrl,
-        amount: CONFIG.SUBSCRIPTION_PRICES[paymentType],
+        amount: prices[paymentType],
         subscription_type: paymentType,
         username: userData.username,
         timestamp: new Date().toISOString()
@@ -900,7 +1016,8 @@ async function handlePaymentScreenshot(ctx, paymentType, userId) {
             `🔐 الحساب: ${userData.onexbet}\n` +
             `💰 المبلغ: ${paymentData.amount}$\n` +
             `📦 الباقة: ${paymentType}\n` +
-            `🆔 الرقم: ${paymentId}`,
+            `🆔 الرقم: ${paymentId}\n` +
+            `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
             { parse_mode: 'Markdown' }
         );
     } catch (error) {
@@ -911,37 +1028,274 @@ async function handlePaymentScreenshot(ctx, paymentType, userId) {
         '📩 *تم استلام صورة الدفع بنجاح*\n\n' +
         '✅ سيتم مراجعتها من الإدارة في أقرب وقت\n' +
         '⏰ عادةً خلال 24 ساعة\n\n' +
-        '📞 للاستفسار: @GEMZGOOLBOT',
+        `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
         getMainKeyboard()
     );
 
     ctx.session.paymentType = null;
 }
 
-// 🔧 ADMIN HANDLERS
+// 🔧 ADMIN HANDLERS - لوحة التحكم الكاملة
 async function handleAdminCommands(ctx, text) {
-    const userId = ctx.from.id.toString();
+    const session = ctx.session;
     
+    switch (session.adminStep) {
+        case 'main':
+            await handleAdminMain(ctx, text);
+            break;
+        case 'users':
+            await handleAdminUsers(ctx, text);
+            break;
+        case 'payments':
+            await handleAdminPayments(ctx, text);
+            break;
+        case 'settings':
+            await handleAdminSettings(ctx, text);
+            break;
+        case 'broadcast':
+            await handleAdminBroadcast(ctx, text);
+            break;
+        case 'search':
+            await handleAdminSearch(ctx, text);
+            break;
+        default:
+            await handleAdminMain(ctx, text);
+            break;
+    }
+}
+
+async function handleAdminMain(ctx, text) {
     switch (text) {
         case '📊 إحصائيات النظام':
             await handleAdminStats(ctx);
             break;
             
-        case '👥 قائمة المستخدمين':
-            await handleAdminUsers(ctx);
+        case '👥 إدارة المستخدمين':
+            ctx.session.adminStep = 'users';
+            await ctx.replyWithMarkdown('👥 *إدارة المستخدمين*', getAdminUsersKeyboard());
             break;
             
         case '💰 طلبات الدفع':
-            await handleAdminPayments(ctx);
+            ctx.session.adminStep = 'payments';
+            await ctx.replyWithMarkdown('💰 *إدارة طلبات الدفع*', getAdminPaymentsKeyboard());
             break;
             
-        case '⚙️ إعدادات الأسعار':
-            await handleAdminPrices(ctx);
+        case '⚙️ الإعدادات':
+            ctx.session.adminStep = 'settings';
+            await ctx.replyWithMarkdown('⚙️ *الإعدادات العامة*', getAdminSettingsKeyboard());
             break;
             
-        case '🔙 الخروج من وضع الإدمن':
+        case '📢 إرسال إشعار':
+            ctx.session.adminStep = 'broadcast';
+            await ctx.replyWithMarkdown(
+                '📢 *إرسال إشعار لجميع المستخدمين*\n\n' +
+                '⏰ أرسل الرسالة التي تريد إرسالها لجميع المستخدمين\n' +
+                '❌ أرسل "إلغاء" للتراجع'
+            );
+            break;
+            
+        case '🔍 بحث عن مستخدم':
+            ctx.session.adminStep = 'search';
+            await ctx.replyWithMarkdown(
+                '🔍 *بحث عن مستخدم*\n\n' +
+                'يمكنك البحث باستخدام:\n' +
+                '• رقم التليجرام\n' +
+                '• رقم حساب 1xBet\n' +
+                '• اسم المستخدم\n\n' +
+                '❌ أرسل "رجوع" للتراجع'
+            );
+            break;
+            
+        case '🔙 الخروج من الإدمن':
             ctx.session.adminMode = false;
-            await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', getMainKeyboard());
+            ctx.session.adminStep = null;
+            await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
+            break;
+            
+        default:
+            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminMainKeyboard());
+            break;
+    }
+}
+
+async function handleAdminStats(ctx) {
+    const users = await dbManager.getAllUsers();
+    const payments = await dbManager.getAllPayments();
+    const pendingPayments = payments.filter(p => p.status === 'pending');
+    const acceptedPayments = payments.filter(p => p.status === 'accepted');
+    
+    const activeUsers = users.filter(u => u.subscription_status === 'active');
+    const freeUsers = users.filter(u => u.subscription_status === 'free');
+    const expiredUsers = users.filter(u => u.subscription_status === 'expired');
+    
+    const totalRevenue = acceptedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const statsMessage = `
+📊 *إحصائيات النظام الشاملة*
+
+👥 *المستخدمين:*
+• الإجمالي: ${users.length}
+• نشطين: ${activeUsers.length}
+• مجانين: ${freeUsers.length}
+• منتهيين: ${expiredUsers.length}
+
+💰 *المدفوعات:*
+• المعلقة: ${pendingPayments.length}
+• المقبولة: ${acceptedPayments.length}
+• الإجمالي: ${payments.length}
+• الإيرادات: ${totalRevenue}$
+
+🎯 *التوقعات:*
+• الإجمالية: ${users.reduce((sum, user) => sum + (user.total_predictions || 0), 0)}
+
+🕒 *آخر تحديث:* ${new Date().toLocaleString('ar-EG')}
+    `;
+    
+    await ctx.replyWithMarkdown(statsMessage, getAdminMainKeyboard());
+}
+
+async function handleAdminUsers(ctx, text) {
+    switch (text) {
+        case '📋 قائمة المستخدمين':
+            await handleAdminUsersList(ctx);
+            break;
+            
+        case '✅ المشتركين النشطين':
+            await handleAdminActiveUsers(ctx);
+            break;
+            
+        case '🆓 المستخدمين المجانين':
+            await handleAdminFreeUsers(ctx);
+            break;
+            
+        case '📈 إحصائيات المستخدمين':
+            await handleAdminUsersStats(ctx);
+            break;
+            
+        case '🔙 رجوع':
+            ctx.session.adminStep = 'main';
+            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+            break;
+            
+        default:
+            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminUsersKeyboard());
+            break;
+    }
+}
+
+async function handleAdminUsersList(ctx) {
+    const users = await dbManager.getAllUsers();
+    
+    let message = `📋 *قائمة المستخدمين (${users.length})*\n\n`;
+    
+    users.slice(0, 15).forEach((user, index) => {
+        message += `${index + 1}. ${user.username} | ${user.onexbet}\n`;
+        message += `   👤 ${user.user_id} | ${user.subscription_status}\n`;
+        if (user.subscription_end_date) {
+            const days = calculateRemainingDays(user.subscription_end_date);
+            message += `   ⏳ ${days} يوم متبقي\n`;
+        }
+        message += `   📊 ${user.total_predictions || 0} توقع\n\n`;
+    });
+    
+    if (users.length > 15) {
+        message += `... و ${users.length - 15} مستخدم آخر`;
+    }
+    
+    await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+}
+
+async function handleAdminActiveUsers(ctx) {
+    const users = await dbManager.getAllUsers();
+    const activeUsers = users.filter(u => u.subscription_status === 'active');
+    
+    let message = `✅ *المشتركين النشطين (${activeUsers.length})*\n\n`;
+    
+    activeUsers.slice(0, 10).forEach((user, index) => {
+        const days = calculateRemainingDays(user.subscription_end_date);
+        message += `${index + 1}. ${user.username}\n`;
+        message += `   🔐 ${user.onexbet} | ${user.subscription_type}\n`;
+        message += `   ⏳ ${days} يوم متبقي\n\n`;
+    });
+    
+    if (activeUsers.length === 0) {
+        message += '❌ لا يوجد مشتركين نشطين حالياً';
+    }
+    
+    await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+}
+
+async function handleAdminFreeUsers(ctx) {
+    const users = await dbManager.getAllUsers();
+    const freeUsers = users.filter(u => u.subscription_status === 'free');
+    
+    let message = `🆓 *المستخدمين المجانين (${freeUsers.length})*\n\n`;
+    
+    freeUsers.slice(0, 10).forEach((user, index) => {
+        message += `${index + 1}. ${user.username}\n`;
+        message += `   🔐 ${user.onexbet}\n`;
+        message += `   🎯 ${user.free_attempts} محاولة متبقية\n\n`;
+    });
+    
+    if (freeUsers.length === 0) {
+        message += '✅ جميع المستخدمين مشتركين';
+    }
+    
+    await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+}
+
+async function handleAdminUsersStats(ctx) {
+    const users = await dbManager.getAllUsers();
+    
+    const predictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
+    const accuracy = users.reduce((sum, user) => sum + (user.correct_predictions || 0), 0);
+    const avgAccuracy = predictions > 0 ? Math.round((accuracy / predictions) * 100) : 0;
+    
+    const statsMessage = `
+📈 *إحصائيات المستخدمين*
+
+👥 إجمالي المستخدمين: ${users.length}
+🎯 إجمالي التوقعات: ${predictions}
+✅ التوقعات الصحيحة: ${accuracy}
+📊 متوسط الدقة: ${avgAccuracy}%
+
+📅 جديد اليوم: ${users.filter(u => {
+    const joinDate = new Date(u.joined_at);
+    const today = new Date();
+    return joinDate.toDateString() === today.toDateString();
+}).length}
+
+📅 جديد الأسبوع: ${users.filter(u => {
+    const joinDate = new Date(u.joined_at);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return joinDate > weekAgo;
+}).length}
+    `;
+    
+    await ctx.replyWithMarkdown(statsMessage, getAdminUsersKeyboard());
+}
+
+async function handleAdminPayments(ctx, text) {
+    switch (text) {
+        case '📥 الطلبات المعلقة':
+            await handleAdminPendingPayments(ctx);
+            break;
+            
+        case '✅ الطلبات المقبولة':
+            await handleAdminAcceptedPayments(ctx);
+            break;
+            
+        case '❌ الطلبات المرفوضة':
+            await handleAdminRejectedPayments(ctx);
+            break;
+            
+        case '📋 كل الطلبات':
+            await handleAdminAllPayments(ctx);
+            break;
+            
+        case '🔙 رجوع':
+            ctx.session.adminStep = 'main';
+            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
             break;
             
         default:
@@ -951,63 +1305,24 @@ async function handleAdminCommands(ctx, text) {
             } else if (text.startsWith('رفض_')) {
                 const paymentId = text.split('_')[1];
                 await handlePaymentReject(ctx, paymentId);
-            } else if (text.startsWith('سعر_')) {
-                await handlePriceUpdate(ctx, text);
+            } else {
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
             }
             break;
     }
 }
 
-async function handleAdminStats(ctx) {
-    const users = await dbManager.getAllUsers();
-    const payments = await dbManager.getPendingPayments();
-    const activeUsers = users.filter(u => u.subscription_status === 'active');
-    const freeUsers = users.filter(u => u.subscription_status === 'free');
-    
-    await ctx.replyWithMarkdown(
-        `📊 *إحصائيات النظام*\n\n` +
-        `👥 إجمالي المستخدمين: ${users.length}\n` +
-        `✅ مشتركين نشطين: ${activeUsers.length}\n` +
-        `🆓 مستخدمين مجانين: ${freeUsers.length}\n` +
-        `💰 طلبات دفع معلقة: ${payments.length}\n` +
-        `🕒 آخر تحديث: ${new Date().toLocaleString('ar-EG')}`,
-        getAdminKeyboard()
-    );
-}
-
-async function handleAdminUsers(ctx) {
-    const users = await dbManager.getAllUsers();
-    
-    let usersList = `👥 *قائمة المستخدمين (${users.length})*\n\n`;
-    
-    users.slice(0, 10).forEach((user, index) => {
-        usersList += `${index + 1}. ${user.username} | ${user.onexbet}\n`;
-        usersList += `   📱 ${user.user_id} | ${user.subscription_status}\n`;
-        if (user.subscription_end_date) {
-            const days = calculateRemainingDays(user.subscription_end_date);
-            usersList += `   ⏳ ${days} يوم متبقي\n`;
-        }
-        usersList += '\n';
-    });
-    
-    if (users.length > 10) {
-        usersList += `... و ${users.length - 10} مستخدم آخر`;
-    }
-    
-    await ctx.replyWithMarkdown(usersList, getAdminKeyboard());
-}
-
-async function handleAdminPayments(ctx) {
+async function handleAdminPendingPayments(ctx) {
     const payments = await dbManager.getPendingPayments();
     
     if (payments.length === 0) {
-        await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع معلقة*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع معلقة*', getAdminPaymentsKeyboard());
         return;
     }
     
     for (const payment of payments.slice(0, 5)) {
         const paymentMessage = `
-💰 *طلب دفع #${payment.id}*
+📥 *طلب دفع معلق #${payment.id}*
 
 👤 المستخدم: ${payment.username}
 🔐 الحساب: ${payment.onexbet}
@@ -1020,43 +1335,278 @@ async function handleAdminPayments(ctx) {
 رفض_${payment.id} - ❌ رفض الطلب
         `;
         
-        await ctx.replyWithMarkdown(paymentMessage, getAdminKeyboard());
+        await ctx.replyWithMarkdown(paymentMessage, getAdminPaymentsKeyboard());
     }
     
     if (payments.length > 5) {
-        await ctx.replyWithMarkdown(`... و ${payments.length - 5} طلب دفع آخر`, getAdminKeyboard());
+        await ctx.replyWithMarkdown(`... و ${payments.length - 5} طلب دفع آخر`, getAdminPaymentsKeyboard());
     }
 }
 
-async function handleAdminPrices(ctx) {
-    const prices = await dbManager.getSettings();
+async function handleAdminAcceptedPayments(ctx) {
+    const payments = await dbManager.getAllPayments();
+    const acceptedPayments = payments.filter(p => p.status === 'accepted');
     
-    const pricesMessage = `
-⚙️ *الإعدادات الحالية*
+    if (acceptedPayments.length === 0) {
+        await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مقبولة*', getAdminPaymentsKeyboard());
+        return;
+    }
+    
+    let message = `✅ *الطلبات المقبولة (${acceptedPayments.length})*\n\n`;
+    
+    acceptedPayments.slice(0, 10).forEach((payment, index) => {
+        message += `${index + 1}. ${payment.username}\n`;
+        message += `   🔐 ${payment.onexbet} | ${payment.subscription_type}\n`;
+        message += `   💰 ${payment.amount}$ | ${new Date(payment.timestamp).toLocaleDateString('ar-EG')}\n\n`;
+    });
+    
+    await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
+}
 
-💰 أسبوعي: ${prices.week}$
-💰 شهري: ${prices.month}$ 
-💰 3 أشهر: ${prices.three_months}$
-💰 سنوي: ${prices.year}$
+async function handleAdminRejectedPayments(ctx) {
+    const payments = await dbManager.getAllPayments();
+    const rejectedPayments = payments.filter(p => p.status === 'rejected');
+    
+    if (rejectedPayments.length === 0) {
+        await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مرفوضة*', getAdminPaymentsKeyboard());
+        return;
+    }
+    
+    let message = `❌ *الطلبات المرفوضة (${rejectedPayments.length})*\n\n`;
+    
+    rejectedPayments.slice(0, 10).forEach((payment, index) => {
+        message += `${index + 1}. ${payment.username}\n`;
+        message += `   🔐 ${payment.onexbet} | ${payment.subscription_type}\n`;
+        message += `   💰 ${payment.amount}$ | ${new Date(payment.timestamp).toLocaleDateString('ar-EG')}\n\n`;
+    });
+    
+    await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
+}
+
+async function handleAdminAllPayments(ctx) {
+    const payments = await dbManager.getAllPayments();
+    
+    const pending = payments.filter(p => p.status === 'pending').length;
+    const accepted = payments.filter(p => p.status === 'accepted').length;
+    const rejected = payments.filter(p => p.status === 'rejected').length;
+    const totalRevenue = payments.filter(p => p.status === 'accepted').reduce((sum, p) => sum + p.amount, 0);
+    
+    const statsMessage = `
+📋 *إحصائيات المدفوعات*
+
+📥 المعلقة: ${pending}
+✅ المقبولة: ${accepted}
+❌ المرفوضة: ${rejected}
+💰 الإيرادات: ${totalRevenue}$
+📈 إجمالي الطلبات: ${payments.length}
+    `;
+    
+    await ctx.replyWithMarkdown(statsMessage, getAdminPaymentsKeyboard());
+}
+
+async function handleAdminSettings(ctx, text) {
+    switch (text) {
+        case '💰 تعديل الأسعار':
+            await handleAdminPriceSettings(ctx);
+            break;
+            
+        case '🔗 تعديل روابط الدفع':
+            await handleAdminPaymentLinks(ctx);
+            break;
+            
+        case '⚙️ الإعدادات العامة':
+            await handleAdminGeneralSettings(ctx);
+            break;
+            
+        case '🔄 إعادة التعيين':
+            await handleAdminReset(ctx);
+            break;
+            
+        case '🔙 رجوع':
+            ctx.session.adminStep = 'main';
+            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+            break;
+            
+        default:
+            if (text.startsWith('سعر_')) {
+                await handlePriceUpdate(ctx, text);
+            } else if (text.startsWith('رابط_')) {
+                await handlePaymentLinkUpdate(ctx, text);
+            } else {
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminSettingsKeyboard());
+            }
+            break;
+    }
+}
+
+async function handleAdminPriceSettings(ctx) {
+    const settings = await dbManager.getSettings();
+    const prices = settings.prices;
+    
+    const priceMessage = `
+💰 *الإعدادات الحالية*
+
+أسبوعي: ${prices.week}$
+شهري: ${prices.month}$ 
+3 أشهر: ${prices.three_months}$
+سنوي: ${prices.year}$
 
 📝 *للتعديل:* 
 سعر_week_50 (لتغيير سعر الأسبوعي لـ 50)
 سعر_month_100 (لتغيير سعر الشهري لـ 100)
+سعر_three_months_200 (لتغيير سعر 3 أشهر لـ 200)
+سعر_year_500 (لتغيير السعر السنوي لـ 500)
     `;
     
-    await ctx.replyWithMarkdown(pricesMessage, getAdminKeyboard());
+    await ctx.replyWithMarkdown(priceMessage, getAdminSettingsKeyboard());
+}
+
+async function handleAdminPaymentLinks(ctx) {
+    const settings = await dbManager.getSettings();
+    const payment_links = settings.payment_links;
+    
+    const linksMessage = `
+🔗 *روابط الدفع الحالية*
+
+أسبوعي: ${payment_links.week}
+شهري: ${payment_links.month}
+3 أشهر: ${payment_links.three_months}
+سنوي: ${payment_links.year}
+
+📝 *للتعديل:* 
+رابط_week_https://new-link.com
+رابط_month_https://new-link.com  
+رابط_three_months_https://new-link.com
+رابط_year_https://new-link.com
+    `;
+    
+    await ctx.replyWithMarkdown(linksMessage, getAdminSettingsKeyboard());
+}
+
+async function handleAdminGeneralSettings(ctx) {
+    const settings = await dbManager.getSettings();
+    
+    const generalMessage = `
+⚙️ *الإعدادات العامة*
+
+🆔 الإصدار: ${CONFIG.VERSION}
+👤 المطور: ${CONFIG.DEVELOPER}
+📢 القناة: ${CONFIG.CHANNEL}
+🕒 آخر تحديث: ${settings.updated_at ? new Date(settings.updated_at).toLocaleString('ar-EG') : 'غير متوفر'}
+
+🔧 *معلومات النظام:*
+• البوت يعمل بشكل طبيعي
+• قاعدة البيانات: ${db ? 'Firebase' : 'محلية'}
+• الصحة: ✅ جيدة
+    `;
+    
+    await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
+}
+
+async function handleAdminReset(ctx) {
+    await ctx.replyWithMarkdown(
+        '🔄 *إعادة التعيين*\n\n' +
+        '⚠️ هذه العملية ستعيد تعيين بعض الإعدادات\n\n' +
+        '❌ *تحذير:* لا يمكن التراجع عن هذه العملية\n\n' +
+        'أرسل "تأكيد" للمواصلة أو "إلغاء" للتراجع'
+    );
+    
+    ctx.session.adminStep = 'reset_confirm';
+}
+
+async function handleAdminBroadcast(ctx, text) {
+    if (text.toLowerCase() === 'إلغاء') {
+        ctx.session.adminStep = 'main';
+        await ctx.replyWithMarkdown('❌ *تم إلغاء الإرسال*', getAdminMainKeyboard());
+        return;
+    }
+
+    const users = await dbManager.getAllUsers();
+    let successCount = 0;
+    let failCount = 0;
+
+    await ctx.replyWithMarkdown(`📤 *جاري إرسال الرسالة لـ ${users.length} مستخدم...*`);
+
+    for (const user of users) {
+        try {
+            await bot.telegram.sendMessage(
+                user.user_id,
+                `📢 *إشعار من الإدارة:*\n\n${text}\n\n${CONFIG.DEVELOPER}`,
+                { parse_mode: 'Markdown' }
+            );
+            successCount++;
+            // تأخير بسيط لتجنب حظر تيليجرام
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+            failCount++;
+            console.error(`Failed to send to ${user.user_id}:`, error.message);
+        }
+    }
+
+    await ctx.replyWithMarkdown(
+        `✅ *تم الانتهاء من الإرسال*\n\n` +
+        `✅ نجح: ${successCount}\n` +
+        `❌ فشل: ${failCount}\n` +
+        `📊 الإجمالي: ${users.length}`
+    );
+
+    ctx.session.adminStep = 'main';
+    await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+}
+
+async function handleAdminSearch(ctx, text) {
+    if (text.toLowerCase() === 'رجوع') {
+        ctx.session.adminStep = 'main';
+        await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+        return;
+    }
+
+    const users = await dbManager.getAllUsers();
+    const searchTerm = text.toLowerCase();
+    
+    const results = users.filter(user => 
+        user.user_id.toLowerCase().includes(searchTerm) ||
+        user.onexbet.includes(searchTerm) ||
+        user.username.toLowerCase().includes(searchTerm)
+    );
+
+    if (results.length === 0) {
+        await ctx.replyWithMarkdown('❌ *لم يتم العثور على نتائج*', getAdminMainKeyboard());
+        return;
+    }
+
+    let message = `🔍 *نتائج البحث (${results.length})*\n\n`;
+    
+    results.slice(0, 5).forEach((user, index) => {
+        message += `${index + 1}. ${user.username}\n`;
+        message += `   👤 ${user.user_id}\n`;
+        message += `   🔐 ${user.onexbet}\n`;
+        message += `   📦 ${user.subscription_status}\n`;
+        if (user.subscription_end_date) {
+            const days = calculateRemainingDays(user.subscription_end_date);
+            message += `   ⏳ ${days} يوم متبقي\n`;
+        }
+        message += '\n';
+    });
+
+    if (results.length > 5) {
+        message += `... و ${results.length - 5} نتيجة أخرى`;
+    }
+
+    await ctx.replyWithMarkdown(message, getAdminMainKeyboard());
+    ctx.session.adminStep = 'main';
 }
 
 async function handlePaymentAccept(ctx, paymentId) {
-    const payment = paymentDatabase.get(paymentId);
+    const payment = await dbManager.getPayment(paymentId);
     if (!payment) {
-        await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminPaymentsKeyboard());
         return;
     }
     
     const userData = await dbManager.getUser(payment.user_id);
     if (!userData) {
-        await ctx.replyWithMarkdown('❌ *المستخدم غير موجود*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('❌ *المستخدم غير موجود*', getAdminPaymentsKeyboard());
         return;
     }
     
@@ -1068,9 +1618,14 @@ async function handlePaymentAccept(ctx, paymentId) {
     userData.subscription_type = payment.subscription_type;
     userData.subscription_start_date = startDate;
     userData.subscription_end_date = endDate;
+    userData.free_attempts = 0; // إلغاء المحاولات المجانية
     
     await dbManager.saveUser(payment.user_id, userData);
-    await dbManager.updatePayment(paymentId, { status: 'accepted' });
+    await dbManager.updatePayment(paymentId, { 
+        status: 'accepted',
+        processed_at: new Date().toISOString(),
+        processed_by: CONFIG.ADMIN_ID
+    });
     
     // إعلام المستخدم
     try {
@@ -1079,8 +1634,10 @@ async function handlePaymentAccept(ctx, paymentId) {
             `🎉 *تم تفعيل اشتراكك بنجاح!*\n\n` +
             `✅ ${payment.subscription_type}\n` +
             `💰 ${payment.amount}$\n` +
-            `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n\n` +
-            `🎯 يمكنك الآن استخدام الخدمة بدون حدود`,
+            `📅 الانتهاء: ${new Date(endDate).toLocaleDateString('ar-EG')}\n` +
+            `⏳ المتبقي: ${calculateRemainingDays(endDate)} يوم\n\n` +
+            `🎯 يمكنك الآن استخدام الخدمة بدون حدود\n\n` +
+            `${CONFIG.DEVELOPER}`,
             { parse_mode: 'Markdown' }
         );
     } catch (error) {
@@ -1088,23 +1645,28 @@ async function handlePaymentAccept(ctx, paymentId) {
     }
     
     await ctx.replyWithMarkdown(
-        `✅ *تم تفعيل الاشتراك للمستخدم*\n\n` +
+        `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
         `👤 ${userData.username}\n` +
         `🔐 ${userData.onexbet}\n` +
         `📦 ${payment.subscription_type}\n` +
-        `💰 ${payment.amount}$`,
-        getAdminKeyboard()
+        `💰 ${payment.amount}$\n` +
+        `📅 حتى: ${new Date(endDate).toLocaleDateString('ar-EG')}`,
+        getAdminPaymentsKeyboard()
     );
 }
 
 async function handlePaymentReject(ctx, paymentId) {
-    const payment = paymentDatabase.get(paymentId);
+    const payment = await dbManager.getPayment(paymentId);
     if (!payment) {
-        await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminPaymentsKeyboard());
         return;
     }
     
-    await dbManager.updatePayment(paymentId, { status: 'rejected' });
+    await dbManager.updatePayment(paymentId, { 
+        status: 'rejected',
+        processed_at: new Date().toISOString(),
+        processed_by: CONFIG.ADMIN_ID
+    });
     
     // إعلام المستخدم
     try {
@@ -1112,7 +1674,7 @@ async function handlePaymentReject(ctx, paymentId) {
             payment.user_id,
             `❌ *تم رفض طلب الدفع*\n\n` +
             `💳 يرجى التحقق من صورة الدفع والمحاولة مرة أخرى\n` +
-            `📞 للاستفسار: @VIP_MFM`,
+            `📞 للاستفسار: ${CONFIG.DEVELOPER}`,
             { parse_mode: 'Markdown' }
         );
     } catch (error) {
@@ -1122,15 +1684,16 @@ async function handlePaymentReject(ctx, paymentId) {
     await ctx.replyWithMarkdown(
         `❌ *تم رفض طلب الدفع*\n\n` +
         `🆔 ${paymentId}\n` +
-        `👤 ${payment.username}`,
-        getAdminKeyboard()
+        `👤 ${payment.username}\n` +
+        `🔐 ${payment.onexbet}`,
+        getAdminPaymentsKeyboard()
     );
 }
 
 async function handlePriceUpdate(ctx, text) {
     const parts = text.split('_');
     if (parts.length !== 3) {
-        await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة*', getAdminSettingsKeyboard());
         return;
     }
     
@@ -1138,30 +1701,58 @@ async function handlePriceUpdate(ctx, text) {
     const price = parseInt(parts[2]);
     
     if (!['week', 'month', 'three_months', 'year'].includes(type) || isNaN(price)) {
-        await ctx.replyWithMarkdown('❌ *نوع أو سعر غير صحيح*', getAdminKeyboard());
+        await ctx.replyWithMarkdown('❌ *نوع أو سعر غير صحيح*', getAdminSettingsKeyboard());
         return;
     }
     
-    const prices = await dbManager.getSettings();
-    prices[type] = price;
-    await dbManager.updateSettings(prices);
+    const settings = await dbManager.getSettings();
+    settings.prices[type] = price;
+    await dbManager.updateSettings(settings);
     
     await ctx.replyWithMarkdown(
         `✅ *تم تحديث السعر*\n\n` +
         `📦 ${type}: ${price}$\n\n` +
         `🔄 سيتم تطبيق الأسعار الجديدة فوراً`,
-        getAdminKeyboard()
+        getAdminSettingsKeyboard()
+    );
+}
+
+async function handlePaymentLinkUpdate(ctx, text) {
+    const parts = text.split('_');
+    if (parts.length !== 3) {
+        await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة*', getAdminSettingsKeyboard());
+        return;
+    }
+    
+    const type = parts[1];
+    const link = parts[2];
+    
+    if (!['week', 'month', 'three_months', 'year'].includes(type)) {
+        await ctx.replyWithMarkdown('❌ *نوع غير صحيح*', getAdminSettingsKeyboard());
+        return;
+    }
+    
+    const settings = await dbManager.getSettings();
+    settings.payment_links[type] = link;
+    await dbManager.updateSettings(settings);
+    
+    await ctx.replyWithMarkdown(
+        `✅ *تم تحديث رابط الدفع*\n\n` +
+        `📦 ${type}: ${link}\n\n` +
+        `🔄 سيتم تطبيق الرابط الجديد فوراً`,
+        getAdminSettingsKeyboard()
     );
 }
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v7.0 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v8.0 is RUNNING!');
     console.log('🤖 Smart Algorithm Version:', goalAI.algorithmVersion);
-    console.log('👤 Developer: Ismail - @GEMZGOOL');
+    console.log('👤 Developer:', CONFIG.DEVELOPER);
+    console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
-    console.log('✅ Accepts ANY 10-digit 1xBet account');
+    console.log('✅ Full Admin Panel Activated');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
