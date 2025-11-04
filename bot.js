@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 8.3
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 9.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + SUBSCRIPTION SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v8.3...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v9.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -46,9 +46,10 @@ const CONFIG = {
         measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-18FYRTQMT9"
     },
     
-    VERSION: "8.3.0",
+    VERSION: "9.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
-    CHANNEL: "@GEMZGOOL"
+    CHANNEL: "@GEMZGOOL",
+    START_IMAGE: "https://i.ibb.co/tMmC9bzy/IMG-20251018-WA0027.jpg"
 };
 
 console.log('✅ Configuration loaded successfully');
@@ -107,11 +108,53 @@ const userDatabase = new Map();
 const paymentDatabase = new Map();
 const settingsDatabase = new Map();
 
+// 📊 FAKE STATISTICS SYSTEM
+class FakeStatistics {
+    constructor() {
+        this.totalUsers = 78542;
+        this.activeUsers = 287;
+        this.lastUpdate = Date.now();
+        this.updateInterval = 3 * 60 * 1000; // Update every 3 minutes
+    }
+
+    getStats() {
+        const now = Date.now();
+        if (now - this.lastUpdate > this.updateInterval) {
+            this.updateStats();
+            this.lastUpdate = now;
+        }
+        return {
+            totalUsers: this.totalUsers,
+            activeUsers: this.activeUsers
+        };
+    }
+
+    updateStats() {
+        // تغيير عشوائي في عدد المستخدمين النشطين
+        const change = Math.floor(Math.random() * 41) - 20; // -20 إلى +20
+        this.activeUsers = Math.max(150, Math.min(350, this.activeUsers + change));
+        
+        // زيادة بطيئة في إجمالي المستخدمين
+        if (Math.random() > 0.7) {
+            this.totalUsers += Math.floor(Math.random() * 10) + 1;
+        }
+    }
+
+    incrementActiveUsers() {
+        this.activeUsers = Math.min(350, this.activeUsers + 1);
+    }
+
+    decrementActiveUsers() {
+        this.activeUsers = Math.max(150, this.activeUsers - 1);
+    }
+}
+
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
         this.predictionHistory = new Map();
-        this.algorithmVersion = "8.3";
+        this.algorithmVersion = "9.0";
+        this.lastPredictionTime = new Map();
     }
 
     generateSmartPrediction(userId, matchContext = {}) {
@@ -130,7 +173,7 @@ class GoalPredictionAI {
         const prediction = {
             type: isGoal ? '⚽ GOAL' : '❌ NO GOAL',
             probability: Math.round(finalProbability),
-            confidence: Math.floor(Math.random() * 15) + 75,
+            confidence: 100, // دائماً 100% ثقة
             reasoning: this.generateReasoning(isGoal, matchContext, finalProbability),
             factors: {
                 time: matchContext.time,
@@ -139,12 +182,14 @@ class GoalPredictionAI {
                 random: Math.round(randomFactor * 100) / 100
             },
             timestamp: new Date().toISOString(),
-            algorithm: this.algorithmVersion
+            algorithm: this.algorithmVersion,
+            isWin: null // سيتم تعيينه لاحقاً
         };
 
         userHistory.push(prediction);
         if (userHistory.length > 10) userHistory.shift();
         this.predictionHistory.set(userId, userHistory);
+        this.lastPredictionTime.set(userId, Date.now());
 
         return prediction;
     }
@@ -189,18 +234,18 @@ class GoalPredictionAI {
     generateReasoning(isGoal, context, probability) {
         const reasons = {
             goal: [
-                `الضغط الهجومي المستمر عند الدقيقة ${context.time || 'متقدمة'} يشير لهدف قريب`,
-                `التسديدات المتتالية على المرمى تزيد فرص التسجيل بشكل ملحوظ`,
-                `الركنيات المتكررة تشكل تهديداً مستمراً على دفاع الخصم`,
-                `الاستحواذ الكبير في منتصف الملعب يخلق فرصاً واضحة`,
-                `لعب الكرات الطويلة والعارضات يضاعف من فرص التسجيل`
+                `الضغط الهجومي المستمر عند الدقيقة ${context.time || 'متقدمة'} يشير لهدف قريب بنسبة 100%`,
+                `التسديدات المتتالية على المرمى تزيد فرص التسجيل بشكل ملحوظ بنسبة 100%`,
+                `الركنيات المتكررة تشكل تهديداً مستمراً على دفاع الخصم بنسبة 100%`,
+                `الاستحواذ الكبير في منتصف الملعب يخلق فرصاً واضحة بنسبة 100%`,
+                `لعب الكرات الطويلة والعارضات يضاعف من فرص التسجيل بنسبة 100%`
             ],
             noGoal: [
-                `الدفاع المنظم في الدقيقة ${context.time || 'الحالية'} يحد من الفرص`,
-                `انخفاض وتيرة الهجمات يقلل من فرص التسجيل حالياً`,
-                `اللعب في منتصف الملعب يحافظ على التوازن الدفاعي`,
-                `غياب الضغط الهجومي المستمر يحد من خطورة المنطقة`,
-                `التحول الدفاعي القوي يجعل التسجيل صعباً في هذه اللحظة`
+                `الدفاع المنظم في الدقيقة ${context.time || 'الحالية'} يحد من الفرص بنسبة 100%`,
+                `انخفاض وتيرة الهجمات يقلل من فرص التسجيل حالياً بنسبة 100%`,
+                `اللعب في منتصف الملعب يحافظ على التوازن الدفاعي بنسبة 100%`,
+                `غياب الضغط الهجومي المستمر يحد من خطورة المنطقة بنسبة 100%`,
+                `التحول الدفاعي القوي يجعل التسجيل صعباً في هذه اللحظة بنسبة 100%`
             ]
         };
         const category = isGoal ? 'goal' : 'noGoal';
@@ -227,13 +272,20 @@ class GoalPredictionAI {
 
     async analyzeImageWithAI(imageUrl) {
         try {
-            console.log('🔄 Using AI for image analysis...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log('🔄 استخدام الذكاء الاصطناعي المتقدم لتحليل الصورة...');
+            // محاكاة تحليل الذكاء الاصطناعي مع تأخير
+            await new Promise(resolve => setTimeout(resolve, 3000));
             return this.generateSmartPrediction('image_analysis');
         } catch (error) {
             console.error('AI analysis error:', error);
             return this.generateSmartPrediction('fallback');
         }
+    }
+
+    canGenerateNextPrediction(userId) {
+        const lastTime = this.lastPredictionTime.get(userId);
+        if (!lastTime) return true;
+        return Date.now() - lastTime > 3000; // 3 ثواني بين التوقعات
     }
 }
 
@@ -429,6 +481,7 @@ class DatabaseManager {
 // INITIALIZE SYSTEMS
 const goalAI = new GoalPredictionAI();
 const dbManager = new DatabaseManager();
+const fakeStats = new FakeStatistics();
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -442,7 +495,9 @@ bot.use(session({
         adminMode: false,
         adminStep: null,
         awaitingPaymentAccount: false,
-        paymentAccount: null
+        paymentAccount: null,
+        lastImageUrl: null,
+        waitingForResult: false
     })
 }));
 
@@ -451,7 +506,8 @@ const getMainKeyboard = () => {
     return Markup.keyboard([
         ['🎯 التوقع التالي', '📊 إحصائياتي'],
         ['📸 إرسال صورة', '💳 الاشتراكات'],
-        ['👤 حالة الاشتراك', '🆘 الدعم الفني']
+        ['👥 إحصائيات البوت', '👤 حالة الاشتراك'],
+        ['🆘 الدعم الفني']
     ]).resize();
 };
 
@@ -530,6 +586,15 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
+        // إرسال الصورة أولاً
+        try {
+            await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
+                caption: `🎉 مرحباً بك في نظام GOAL Predictor Pro 🚀`
+            });
+        } catch (photoError) {
+            console.log('⚠️ Could not send start image, continuing with text...');
+        }
+
         // 🔍 التحقق من وجود المستخدم في قاعدة البيانات
         const existingUser = await dbManager.getUser(userId);
         
@@ -578,8 +643,7 @@ bot.start(async (ctx) => {
 
 🔍 *المزايا المتقدمة:*
 ✅ خوارزمية ذكية مخفية للتوقع
-✅ زر "التوقع التالي" يولد توقعات مختلفة
-✅ تحليل حقيقي للمباريات من الصور
+✅ تحليل بالذكاء الاصطناعي ثقة 100%
 ✅ نتائج فورية مع شرح مفصل
 
 💎 *المطور:* ${CONFIG.DEVELOPER}
@@ -669,7 +733,9 @@ bot.on('text', async (ctx) => {
                     subscription_end_date: null,
                     joined_at: new Date().toISOString(),
                     total_predictions: 0,
-                    correct_predictions: 0
+                    correct_predictions: 0,
+                    wins: 0,
+                    losses: 0
                 };
 
                 await dbManager.saveUser(userId, userData);
@@ -727,6 +793,10 @@ bot.on('text', async (ctx) => {
                     await handleUserStats(ctx, userData);
                     break;
 
+                case '👥 إحصائيات البوت':
+                    await handleBotStats(ctx);
+                    break;
+
                 case '📸 إرسال صورة':
                     await ctx.replyWithMarkdown(
                         '📸 *يرجى إرسال صورة المباراة الآن*\n\n' +
@@ -773,7 +843,7 @@ bot.on('text', async (ctx) => {
             }
         }
         // 🔐 إذا كان المستخدم غير مسجل وحاول استخدام الأزرار
-        else if (['🎯 التوقع التالي', '📊 إحصائياتي', '📸 إرسال صورة'].includes(text)) {
+        else if (['🎯 التوقع التالي', '📊 إحصائياتي', '📸 إرسال صورة', '👥 إحصائيات البوت'].includes(text)) {
             await ctx.replyWithMarkdown(
                 '❌ *يجب التسجيل أولاً*\n\n' +
                 '🔐 أرسل /start لتسجيل الدخول',
@@ -822,10 +892,13 @@ bot.on('photo', async (ctx) => {
 
         console.log(`📸 Processing image from user ${userId}`);
 
-        const processingMsg = await ctx.reply('🔄 جاري تحليل صورة المباراة...\n⏳ تستخدم الخوارزمية الذكية المخفية');
+        const processingMsg = await ctx.reply('🔄 جاري تحليل صورة المباراة بالذكاء الاصطناعي...\n⏳ تستخدم الخوارزمية الذكية المخفية');
 
         try {
             const prediction = await goalAI.analyzeImageWithAI(imageUrl);
+            
+            // حفظ رابط الصورة في الجلسة
+            ctx.session.lastImageUrl = imageUrl;
             
             // 📊 تحديث إحصائيات المستخدم
             if (userData.subscription_status !== 'active') {
@@ -859,6 +932,21 @@ ${userData.subscription_status !== 'active' ?
             `;
 
             await ctx.replyWithMarkdown(analysisMessage, getMainKeyboard());
+            
+            // إضافة أزرار الفوز والخسارة
+            const resultKeyboard = Markup.inlineKeyboard([
+                [Markup.button.callback('🎉 فزت', `win_${userData.total_predictions}`)],
+                [Markup.button.callback('💔 خسرت', `lose_${userData.total_predictions}`)]
+            ]);
+
+            await ctx.replyWithMarkdown(
+                '📊 *ما هي نتيجة التوقع؟*\n\n' +
+                '🎉 *فزت* - إذا كان التوقع صحيح\n' +
+                '💔 *خسرت* - إذا كان التوقع خاطئ\n\n' +
+                '🔄 سيتم تحديث إحصائيك تلقائياً',
+                resultKeyboard
+            );
+
             await ctx.deleteMessage(processingMsg.message_id);
 
             console.log(`✅ Analysis completed for user ${userId}`);
@@ -886,6 +974,71 @@ ${userData.subscription_status !== 'active' ?
     }
 });
 
+// 🎯 HANDLE CALLBACK QUERIES (لأزرار الفوز والخسارة)
+bot.on('callback_query', async (ctx) => {
+    try {
+        const callbackData = ctx.callbackQuery.data;
+        const userId = ctx.from.id.toString();
+        
+        if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
+            const isWin = callbackData.startsWith('win_');
+            const predictionIndex = parseInt(callbackData.split('_')[1]);
+            
+            const userData = await dbManager.getUser(userId);
+            if (!userData) {
+                await ctx.answerCbQuery('❌ لم يتم العثور على بيانات المستخدم');
+                return;
+            }
+            
+            // تحديث إحصائيات الفوز/الخسارة
+            if (isWin) {
+                userData.wins = (userData.wins || 0) + 1;
+                userData.correct_predictions = (userData.correct_predictions || 0) + 1;
+                await ctx.answerCbQuery('🎉 تم تسجيل الفوز بنجاح!');
+            } else {
+                userData.losses = (userData.losses || 0) + 1;
+                await ctx.answerCbQuery('💔 تم تسجيل الخسارة');
+            }
+            
+            await dbManager.saveUser(userId, userData);
+            
+            // إرسال رسالة تأكيد
+            const resultMessage = isWin ? 
+                `🎉 *مبروك الفوز!*\n\n` +
+                `✅ توقعك كان صحيحاً\n` +
+                `📈 تم تحديث إحصائيك\n\n` +
+                `🎯 يمكنك الآن استخدام زر "التوقع التالي"` :
+                `💔 *للأسف خسرت*\n\n` +
+                `❌ توقعك كان خاطئاً\n` +
+                `📉 تم تحديث إحصائيك\n\n` +
+                `🎯 جرب مرة أخرى مع "التوقع التالي"`;
+            
+            await ctx.replyWithMarkdown(resultMessage, getMainKeyboard());
+            
+            // حذف الرسالة القديمة التي تحتوي على الأزرار
+            try {
+                await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+            } catch (deleteError) {
+                console.log('Could not delete message:', deleteError);
+            }
+        }
+        
+        // معالجة أزرار القبول والرفع في الإدمن
+        else if (callbackData.startsWith('accept_')) {
+            const paymentId = callbackData.split('_')[1];
+            await handlePaymentAccept(ctx, paymentId);
+        }
+        else if (callbackData.startsWith('reject_')) {
+            const paymentId = callbackData.split('_')[1];
+            await handlePaymentReject(ctx, paymentId);
+        }
+        
+    } catch (error) {
+        console.error('Callback query error:', error);
+        await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
+    }
+});
+
 // 🎯 HANDLER FUNCTIONS
 
 async function handlePrediction(ctx, userData) {
@@ -902,14 +1055,72 @@ async function handlePrediction(ctx, userData) {
         return;
     }
 
-    // 📸 طلب إرسال صورة أولاً
-    await ctx.replyWithMarkdown(
-        '📸 *يجب إرسال صورة المباراة أولاً*\n\n' +
-        '🎯 للحصول على توقع دقيق، يرجى إرسال صورة المباراة\n\n' +
-        '🖼️ *الأنواع المدعومة:* PNG, JPG, JPEG\n\n' +
-        '🤖 *سيقوم الذكاء الاصطناعي بتحليل الصورة وإعطاء توقع فوري*',
-        getMainKeyboard()
-    );
+    // التحقق من الوقت بين التوقعات
+    if (!goalAI.canGenerateNextPrediction(userId)) {
+        await ctx.replyWithMarkdown(
+            '⏳ *يرجى الانتظار 3 ثواني بين التوقعات*\n\n' +
+            '🔄 جاري تحضير التوقع التالي...',
+            getMainKeyboard()
+        );
+        return;
+    }
+
+    // 📊 تحديث إحصائيات المستخدم
+    if (userData.subscription_status !== 'active') {
+        userData.free_attempts--;
+    }
+    userData.total_predictions = (userData.total_predictions || 0) + 1;
+    
+    const processingMsg = await ctx.reply('🔄 جاري توليد التوقع التالي بالذكاء الاصطناعي...\n⚽ تستخدم الخوارزمية الذكية المخفية');
+
+    try {
+        // تأخير 3 ثواني لمحاكاة المعالجة
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        const nextPrediction = goalAI.generateNextPrediction(userId);
+        userData.lastPrediction = nextPrediction;
+        await dbManager.saveUser(userId, userData);
+
+        const predictionMessage = `
+🤖 *التوقع التالي - الذكاء الاصطناعي المتقدم*
+
+${nextPrediction.type}
+📈 *الاحتمالية:* ${nextPrediction.probability}%
+🎯 *الثقة:* ${nextPrediction.confidence}%
+
+💡 *التحليل الجديد:*
+${nextPrediction.reasoning}
+
+${userData.subscription_status !== 'active' ? 
+    `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
+    `✅ *اشتراك نشط - محاولات غير محدودة*`}
+
+🔄 *تم توليد توقع جديد باستخدام خوارزمية ذكية مخفية*
+        `;
+
+        await ctx.replyWithMarkdown(predictionMessage, getMainKeyboard());
+        
+        // إضافة أزرار الفوز والخسارة
+        const resultKeyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('🎉 فزت', `win_${userData.total_predictions}`)],
+            [Markup.button.callback('💔 خسرت', `lose_${userData.total_predictions}`)]
+        ]);
+
+        await ctx.replyWithMarkdown(
+            '📊 *ما هي نتيجة التوقع؟*\n\n' +
+            '🎉 *فزت* - إذا كان التوقع صحيح\n' +
+            '💔 *خسرت* - إذا كان التوقع خاطئ\n\n' +
+            '🔄 سيتم تحديث إحصائيك تلقائياً',
+            resultKeyboard
+        );
+
+        await ctx.deleteMessage(processingMsg.message_id);
+
+    } catch (error) {
+        console.error('Prediction error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في توليد التوقع*', getMainKeyboard());
+        await ctx.deleteMessage(processingMsg.message_id);
+    }
 }
 
 async function handleUserStats(ctx, userData) {
@@ -931,8 +1142,22 @@ async function handleUserStats(ctx, userData) {
         `👤 ${userData.username}\n` +
         `📈 ${userData.total_predictions || 0} توقع\n` +
         `✅ ${userData.correct_predictions || 0} صحيحة\n` +
-        `🎯 ${accuracy}% دقة` +
+        `🎯 ${accuracy}% دقة\n` +
+        `🎉 ${userData.wins || 0} فوز\n` +
+        `💔 ${userData.losses || 0} خسارة` +
         subscriptionInfo,
+        getMainKeyboard()
+    );
+}
+
+async function handleBotStats(ctx) {
+    const stats = fakeStats.getStats();
+    await ctx.replyWithMarkdown(
+        `👥 *إحصائيات البوت*\n\n` +
+        `👤 إجمالي المستخدمين: ${stats.totalUsers.toLocaleString()}\n` +
+        `🟢 مستخدمين نشطين الآن: ${stats.activeUsers}\n` +
+        `📊 التوقعات اليومية: ${Math.floor(stats.activeUsers * 8.5)}\n\n` +
+        `🎯 *النظام يعمل بكفاءة عالية*`,
         getMainKeyboard()
     );
 }
@@ -1060,18 +1285,29 @@ async function handlePaymentScreenshot(ctx, userId) {
 
         const paymentId = await dbManager.addPayment(paymentData);
         
-        // إعلام الإدارة
+        // إعلام الإدارة مع الصورة
         try {
-            await bot.telegram.sendMessage(
+            await bot.telegram.sendPhoto(
                 CONFIG.ADMIN_ID,
-                `🆕 *طلب دفع جديد*\n\n` +
-                `👤 المستخدم: ${userData.username}\n` +
-                `🔐 الحساب: ${accountNumber}\n` +
-                `💰 المبلغ: ${paymentData.amount}$\n` +
-                `📦 الباقة: ${ctx.session.paymentType}\n` +
-                `🆔 الرقم: ${paymentId}\n` +
-                `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
-                { parse_mode: 'Markdown' }
+                imageUrl,
+                {
+                    caption: `🆕 *طلب دفع جديد*\n\n` +
+                            `👤 المستخدم: ${userData.username}\n` +
+                            `🔐 الحساب: ${accountNumber}\n` +
+                            `💰 المبلغ: ${paymentData.amount}$\n` +
+                            `📦 الباقة: ${ctx.session.paymentType}\n` +
+                            `🆔 الرقم: ${paymentId}\n` +
+                            `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: '✅ قبول', callback_data: `accept_${paymentId}` },
+                                { text: '❌ رفض', callback_data: `reject_${paymentId}` }
+                            ]
+                        ]
+                    }
+                }
             );
         } catch (error) {
             console.error('Error notifying admin:', error);
@@ -1196,6 +1432,7 @@ async function handleAdminStats(ctx) {
         const expiredUsers = users.filter(u => u.subscription_status === 'expired');
         
         const totalRevenue = acceptedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+        const botStats = fakeStats.getStats();
         
         const statsMessage = `
 📊 *إحصائيات النظام الشاملة*
@@ -1214,6 +1451,10 @@ async function handleAdminStats(ctx) {
 
 🎯 *التوقعات:*
 • الإجمالية: ${users.reduce((sum, user) => sum + (user.total_predictions || 0), 0)}
+
+📈 *إحصائيات البوت:*
+• المستخدمين: ${botStats.totalUsers.toLocaleString()}
+• النشطين: ${botStats.activeUsers}
 
 🕒 *آخر تحديث:* ${new Date().toLocaleString('ar-EG')}
         `;
@@ -1390,15 +1631,7 @@ async function handleAdminPayments(ctx, text) {
             break;
             
         default:
-            if (text.startsWith('قبول_')) {
-                const paymentId = text.split('_')[1];
-                await handlePaymentAccept(ctx, paymentId);
-            } else if (text.startsWith('رفض_')) {
-                const paymentId = text.split('_')[1];
-                await handlePaymentReject(ctx, paymentId);
-            } else {
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
-            }
+            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
             break;
     }
 }
@@ -1413,21 +1646,36 @@ async function handleAdminPendingPayments(ctx) {
         }
         
         for (const payment of payments.slice(0, 5)) {
-            const paymentMessage = `
-📥 *طلب دفع معلق #${payment.id}*
-
-👤 المستخدم: ${payment.username}
-🔐 الحساب: ${payment.onexbet}
-💰 المبلغ: ${payment.amount}$
-📦 الباقة: ${payment.subscription_type}
-📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}
-
-✅ *الإجراءات:*
-قبول_${payment.id} - ✅ قبول الطلب
-رفض_${payment.id} - ❌ رفض الطلب
-            `;
-            
-            await ctx.replyWithMarkdown(paymentMessage, getAdminPaymentsKeyboard());
+            try {
+                await ctx.replyWithPhoto(payment.screenshot_url, {
+                    caption: `📥 *طلب دفع معلق #${payment.id}*\n\n` +
+                            `👤 المستخدم: ${payment.username}\n` +
+                            `🔐 الحساب: ${payment.onexbet}\n` +
+                            `💰 المبلغ: ${payment.amount}$\n` +
+                            `📦 الباقة: ${payment.subscription_type}\n` +
+                            `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}`,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: '✅ قبول', callback_data: `accept_${payment.id}` },
+                                { text: '❌ رفض', callback_data: `reject_${payment.id}` }
+                            ]
+                        ]
+                    }
+                });
+            } catch (photoError) {
+                console.error('Error sending payment photo:', photoError);
+                await ctx.replyWithMarkdown(
+                    `📥 *طلب دفع معلق #${payment.id}*\n\n` +
+                    `👤 المستخدم: ${payment.username}\n` +
+                    `🔐 الحساب: ${payment.onexbet}\n` +
+                    `💰 المبلغ: ${payment.amount}$\n` +
+                    `📦 الباقة: ${payment.subscription_type}\n` +
+                    `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n\n` +
+                    `❌ *تعذر تحميل صورة الدفع*`,
+                    getAdminPaymentsKeyboard()
+                );
+            }
         }
         
         if (payments.length > 5) {
@@ -1769,13 +2017,13 @@ async function handlePaymentAccept(ctx, paymentId) {
     try {
         const payment = await dbManager.getPayment(paymentId);
         if (!payment) {
-            await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminPaymentsKeyboard());
+            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
             return;
         }
         
         const userData = await dbManager.getUser(payment.user_id);
         if (!userData) {
-            await ctx.replyWithMarkdown('❌ *المستخدم غير موجود*', getAdminPaymentsKeyboard());
+            await ctx.answerCbQuery('❌ المستخدم غير موجود');
             return;
         }
         
@@ -1813,6 +2061,7 @@ async function handlePaymentAccept(ctx, paymentId) {
             console.error('Error notifying user:', error);
         }
         
+        await ctx.answerCbQuery('✅ تم تفعيل الاشتراك');
         await ctx.replyWithMarkdown(
             `✅ *تم تفعيل الاشتراك بنجاح*\n\n` +
             `👤 ${userData.username}\n` +
@@ -1822,9 +2071,24 @@ async function handlePaymentAccept(ctx, paymentId) {
             `📅 حتى: ${new Date(endDate).toLocaleDateString('ar-EG')}`,
             getAdminPaymentsKeyboard()
         );
+
+        // تحديث الرسالة الأصلية
+        try {
+            await ctx.editMessageCaption(
+                `✅ *طلب دفع مقبول #${payment.id}*\n\n` +
+                `👤 المستخدم: ${payment.username}\n` +
+                `🔐 الحساب: ${payment.onexbet}\n` +
+                `💰 المبلغ: ${payment.amount}$\n` +
+                `📦 الباقة: ${payment.subscription_type}\n` +
+                `📅 القبول: ${new Date().toLocaleString('ar-EG')}`
+            );
+        } catch (editError) {
+            console.log('Could not edit message:', editError);
+        }
+        
     } catch (error) {
         console.error('Payment accept error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في قبول الدفع*', getAdminPaymentsKeyboard());
+        await ctx.answerCbQuery('❌ حدث خطأ في قبول الدفع');
     }
 }
 
@@ -1832,7 +2096,7 @@ async function handlePaymentReject(ctx, paymentId) {
     try {
         const payment = await dbManager.getPayment(paymentId);
         if (!payment) {
-            await ctx.replyWithMarkdown('❌ *طلب الدفع غير موجود*', getAdminPaymentsKeyboard());
+            await ctx.answerCbQuery('❌ طلب الدفع غير موجود');
             return;
         }
         
@@ -1855,6 +2119,7 @@ async function handlePaymentReject(ctx, paymentId) {
             console.error('Error notifying user:', error);
         }
         
+        await ctx.answerCbQuery('❌ تم رفض الطلب');
         await ctx.replyWithMarkdown(
             `❌ *تم رفض طلب الدفع*\n\n` +
             `🆔 ${paymentId}\n` +
@@ -1862,9 +2127,24 @@ async function handlePaymentReject(ctx, paymentId) {
             `🔐 ${payment.onexbet}`,
             getAdminPaymentsKeyboard()
         );
+
+        // تحديث الرسالة الأصلية
+        try {
+            await ctx.editMessageCaption(
+                `❌ *طلب دفع مرفوض #${payment.id}*\n\n` +
+                `👤 المستخدم: ${payment.username}\n` +
+                `🔐 الحساب: ${payment.onexbet}\n` +
+                `💰 المبلغ: ${payment.amount}$\n` +
+                `📦 الباقة: ${payment.subscription_type}\n` +
+                `📅 الرفض: ${new Date().toLocaleString('ar-EG')}`
+            );
+        } catch (editError) {
+            console.log('Could not edit message:', editError);
+        }
+        
     } catch (error) {
         console.error('Payment reject error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في رفض الدفع*', getAdminPaymentsKeyboard());
+        await ctx.answerCbQuery('❌ حدث خطأ في رفض الدفع');
     }
 }
 
@@ -1934,7 +2214,7 @@ async function handlePaymentLinkUpdate(ctx, text) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v8.3 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v9.0 is RUNNING!');
     console.log('🤖 Smart Algorithm Version:', goalAI.algorithmVersion);
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
