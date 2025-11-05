@@ -1,0 +1,16 @@
+{
+  "name": "ai-goal-predictor-bot",
+  "version": "10.5.0",
+  "description": "AI Goal Prediction Bot",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.12.2",
+    "axios": "^1.6.0",
+    "express": "^4.18.2",
+    "form-data": "^4.0.0",
+    "firebase-admin": "^11.8.0"
+  }
+}
