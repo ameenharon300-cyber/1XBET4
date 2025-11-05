@@ -1,0 +1,33 @@
+{
+  "name": "ai-goal-predictor-pro",
+  "version": "9.0.0",
+  "description": "Advanced AI Goal Prediction System with Full Admin Panel",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "ai",
+    "goal-prediction",
+    "football",
+    "1xbet",
+    "telegram-bot",
+    "smart-algorithm",
+    "subscription",
+    "firebase",
+    "full-admin-panel"
+  ],
+  "author": "AMIN - @GEMZGOOLBOT",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.6.2",
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
