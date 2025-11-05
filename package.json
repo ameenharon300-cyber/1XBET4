@@ -2,7 +2,7 @@
 [file content begin]
 {
   "name": "ai-goal-predictor-pro",
-  "version": "9.2.0",
+  "version": "10.0.0",
   "description": "Advanced AI Goal Prediction System with Full Admin Panel",
   "main": "bot.js",
   "scripts": {
