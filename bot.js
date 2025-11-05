@@ -1,12 +1,12 @@
 [file name]: bot.js
 [file content begin]
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 9.2
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.0
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v9.2...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v10.0...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -48,7 +48,7 @@ const CONFIG = {
         measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-18FYRTQMT9"
     },
     
-    VERSION: "9.2.0",
+    VERSION: "10.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -119,7 +119,7 @@ class FakeStatistics {
         this.totalUsers = 78542;
         this.activeUsers = 287;
         this.lastUpdate = Date.now();
-        this.updateInterval = 3 * 60 * 1000; // Update every 3 minutes
+        this.updateInterval = 3 * 60 * 1000;
     }
 
     getStats() {
@@ -142,21 +142,13 @@ class FakeStatistics {
             this.totalUsers += Math.floor(Math.random() * 10) + 1;
         }
     }
-
-    incrementActiveUsers() {
-        this.activeUsers = Math.min(350, this.activeUsers + 1);
-    }
-
-    decrementActiveUsers() {
-        this.activeUsers = Math.max(150, this.activeUsers - 1);
-    }
 }
 
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
         this.predictionHistory = new Map();
-        this.algorithmVersion = "9.2";
+        this.algorithmVersion = "10.0";
         this.lastPredictionTime = new Map();
     }
 
@@ -178,15 +170,8 @@ class GoalPredictionAI {
             probability: Math.round(finalProbability),
             confidence: 100,
             reasoning: this.generateReasoning(isGoal, matchContext, finalProbability),
-            factors: {
-                time: matchContext.time,
-                pressure: Math.round(pressureFactor),
-                history: Math.round(historyFactor),
-                random: Math.round(randomFactor * 100) / 100
-            },
             timestamp: new Date().toISOString(),
-            algorithm: this.algorithmVersion,
-            isWin: null
+            algorithm: this.algorithmVersion
         };
 
         userHistory.push(prediction);
@@ -268,8 +253,7 @@ class GoalPredictionAI {
             attacks: Math.floor(Math.random() * 15) + 5,
             shotsOnTarget: Math.floor(Math.random() * 6) + 1,
             corners: Math.floor(Math.random() * 5) + 1,
-            possession: Math.floor(Math.random() * 40) + 30,
-            momentum: ['HIGH', 'MEDIUM', 'LOW'][Math.floor(Math.random() * 3)]
+            possession: Math.floor(Math.random() * 40) + 30
         };
     }
 
@@ -338,89 +322,104 @@ class DatabaseManager {
     }
 
     async getUser(userId) {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const userDoc = await db.collection('users').doc(userId.toString()).get();
                 return userDoc.exists ? userDoc.data() : null;
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            return userDatabase.get(userId) || null;
+        } catch (error) {
+            console.error('Get user error:', error);
+            return userDatabase.get(userId) || null;
         }
-        return userDatabase.get(userId) || null;
     }
 
     async saveUser(userId, userData) {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 await db.collection('users').doc(userId.toString()).set(userData, { merge: true });
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            userDatabase.set(userId, userData);
+        } catch (error) {
+            console.error('Save user error:', error);
+            userDatabase.set(userId, userData);
         }
-        userDatabase.set(userId, userData);
     }
 
     async addPayment(paymentData) {
         const paymentId = Date.now().toString();
-        if (db) {
-            try {
+        try {
+            if (db) {
                 await db.collection('payments').doc(paymentId).set({
                     ...paymentData,
                     id: paymentId,
                     status: 'pending',
                     timestamp: new Date().toISOString()
                 });
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            paymentDatabase.set(paymentId, { 
+                ...paymentData, 
+                id: paymentId, 
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            });
+            return paymentId;
+        } catch (error) {
+            console.error('Add payment error:', error);
+            paymentDatabase.set(paymentId, { 
+                ...paymentData, 
+                id: paymentId, 
+                status: 'pending',
+                timestamp: new Date().toISOString()
+            });
+            return paymentId;
         }
-        paymentDatabase.set(paymentId, { 
-            ...paymentData, 
-            id: paymentId, 
-            status: 'pending',
-            timestamp: new Date().toISOString()
-        });
-        return paymentId;
     }
 
     async getPendingPayments() {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const paymentsSnapshot = await db.collection('payments')
                     .where('status', '==', 'pending')
                     .get();
                 return paymentsSnapshot.docs.map(doc => doc.data());
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
+        } catch (error) {
+            console.error('Get pending payments error:', error);
+            return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
         }
-        return Array.from(paymentDatabase.values()).filter(p => p.status === 'pending');
     }
 
     async updatePayment(paymentId, updates) {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 await db.collection('payments').doc(paymentId).update(updates);
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
-        }
-        const payment = paymentDatabase.get(paymentId);
-        if (payment) {
-            paymentDatabase.set(paymentId, { ...payment, ...updates });
+            const payment = paymentDatabase.get(paymentId);
+            if (payment) {
+                paymentDatabase.set(paymentId, { ...payment, ...updates });
+            }
+        } catch (error) {
+            console.error('Update payment error:', error);
+            const payment = paymentDatabase.get(paymentId);
+            if (payment) {
+                paymentDatabase.set(paymentId, { ...payment, ...updates });
+            }
         }
     }
 
     async getAllUsers() {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const usersSnapshot = await db.collection('users').get();
                 return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
+        } catch (error) {
+            console.error('Get all users error:', error);
+            return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
         }
-        return Array.from(userDatabase.entries()).map(([id, data]) => ({ id, ...data }));
     }
 
     async getSettings() {
@@ -431,8 +430,8 @@ class DatabaseManager {
 
         let settings = null;
         
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const settingsDoc = await db.collection('settings').doc('config').get();
                 if (settingsDoc.exists) {
                     settings = settingsDoc.data();
@@ -445,13 +444,20 @@ class DatabaseManager {
                     };
                     await db.collection('settings').doc('config').set(settings);
                 }
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
-                settings = null;
+            } else {
+                settings = settingsDatabase.get('config');
+                if (!settings) {
+                    settings = {
+                        prices: CONFIG.SUBSCRIPTION_PRICES,
+                        payment_links: CONFIG.PAYMENT_LINKS,
+                        maintenance_mode: false,
+                        updated_at: new Date().toISOString()
+                    };
+                    settingsDatabase.set('config', settings);
+                }
             }
-        }
-        
-        if (!settings) {
+        } catch (error) {
+            console.error('Get settings error:', error);
             settings = settingsDatabase.get('config');
             if (!settings) {
                 settings = {
@@ -477,15 +483,16 @@ class DatabaseManager {
             updated_at: new Date().toISOString()
         };
 
-        if (db) {
-            try {
+        try {
+            if (db) {
                 await db.collection('settings').doc('config').set(updatedSettings, { merge: true });
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            settingsDatabase.set('config', updatedSettings);
+        } catch (error) {
+            console.error('Update settings error:', error);
+            settingsDatabase.set('config', updatedSettings);
         }
-        
-        settingsDatabase.set('config', updatedSettings);
+
         this.settingsCache = updatedSettings;
         this.lastSettingsUpdate = Date.now();
         this.maintenanceMode = updatedSettings.maintenance_mode || false;
@@ -494,27 +501,29 @@ class DatabaseManager {
     }
 
     async getPayment(paymentId) {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const paymentDoc = await db.collection('payments').doc(paymentId).get();
                 return paymentDoc.exists ? paymentDoc.data() : null;
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            return paymentDatabase.get(paymentId) || null;
+        } catch (error) {
+            console.error('Get payment error:', error);
+            return paymentDatabase.get(paymentId) || null;
         }
-        return paymentDatabase.get(paymentId) || null;
     }
 
     async getAllPayments() {
-        if (db) {
-            try {
+        try {
+            if (db) {
                 const paymentsSnapshot = await db.collection('payments').get();
                 return paymentsSnapshot.docs.map(doc => doc.data());
-            } catch (error) {
-                console.error('Firebase error, using local storage:', error);
             }
+            return Array.from(paymentDatabase.values());
+        } catch (error) {
+            console.error('Get all payments error:', error);
+            return Array.from(paymentDatabase.values());
         }
-        return Array.from(paymentDatabase.values());
     }
 
     isMaintenanceMode() {
@@ -522,10 +531,15 @@ class DatabaseManager {
     }
 
     async setMaintenanceMode(enabled) {
-        const settings = await this.getSettings();
-        settings.maintenance_mode = enabled;
-        await this.updateSettings(settings);
-        this.maintenanceMode = enabled;
+        try {
+            const settings = await this.getSettings();
+            settings.maintenance_mode = enabled;
+            await this.updateSettings(settings);
+            this.maintenanceMode = enabled;
+        } catch (error) {
+            console.error('Set maintenance mode error:', error);
+            this.maintenanceMode = enabled;
+        }
     }
 }
 
@@ -548,8 +562,6 @@ bot.use(session({
         adminStep: null,
         awaitingPaymentAccount: false,
         paymentAccount: null,
-        lastImageUrl: null,
-        waitingForResult: false,
         currentBet: 0,
         originalBet: 0,
         totalProfit: 0,
@@ -618,23 +630,33 @@ const getAdminSettingsKeyboard = () => {
 
 // 🛠️ UTILITY FUNCTIONS
 function calculateRemainingDays(endDate) {
-    const end = new Date(endDate);
-    const now = new Date();
-    const diffTime = end - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+    try {
+        const end = new Date(endDate);
+        const now = new Date();
+        const diffTime = end - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays > 0 ? diffDays : 0;
+    } catch (error) {
+        return 0;
+    }
 }
 
 function addSubscriptionDays(startDate, type) {
-    const start = new Date(startDate);
-    const types = {
-        week: 7,
-        month: 30,
-        three_months: 90,
-        year: 365
-    };
-    start.setDate(start.getDate() + types[type]);
-    return start.toISOString();
+    try {
+        const start = new Date(startDate);
+        const types = {
+            week: 7,
+            month: 30,
+            three_months: 90,
+            year: 365
+        };
+        start.setDate(start.getDate() + types[type]);
+        return start.toISOString();
+    } catch (error) {
+        const newDate = new Date();
+        newDate.setDate(newDate.getDate() + 30);
+        return newDate.toISOString();
+    }
 }
 
 // 🎯 BOT COMMANDS
@@ -659,8 +681,8 @@ bot.start(async (ctx) => {
                         `📢 *القناة:* ${CONFIG.CHANNEL}`
             });
         } catch (photoError) {
-            console.log('⚠️ Could not send start image, continuing with text...');
-            await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro* 🚀`);
+            console.log('⚠️ Could not send start image, using text only');
+            await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
         }
 
         const existingUser = await dbManager.getUser(userId);
@@ -706,11 +728,6 @@ bot.start(async (ctx) => {
 3️⃣ أدخل كود التحقق
 4️⃣ ابدأ باستخدام المحاولات المجانية
 
-🔍 *المزايا المتقدمة:*
-✅ خوارزمية ذكية مخفية للتوقع
-✅ تحليل بالذكاء الاصطناعي ثقة 100%
-✅ نتائج فورية مع شرح مفصل
-
 💎 *المطور:* ${CONFIG.DEVELOPER}
 📢 *القناة:* ${CONFIG.CHANNEL}
 
@@ -719,8 +736,6 @@ bot.start(async (ctx) => {
 
             await ctx.replyWithMarkdown(welcomeMessage, getLoginKeyboard());
         }
-
-        console.log(`🆕 User ${userName} (${userId}) started the bot`);
 
     } catch (error) {
         console.error('Start command error:', error);
@@ -932,14 +947,7 @@ bot.on('text', async (ctx) => {
                 default:
                     if (text.startsWith('💰 ')) {
                         await handleSubscriptionSelection(ctx, userData, text);
-                    } else if (/^\d{10}$/.test(text)) {
-                        await ctx.replyWithMarkdown(
-                            '❌ *أنت مسجل بالفعل*\n\n' +
-                            '🔐 يمكنك استخدام الأزرار في الأسفل للتحكم في النظام',
-                            getMainKeyboard()
-                        );
                     } else {
-                        // أي رسالة أخرى ترجع للقائمة الرئيسية
                         await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
                     }
                     break;
@@ -953,13 +961,12 @@ bot.on('text', async (ctx) => {
                 getLoginKeyboard()
             );
         } else {
-            // أي رسالة أخرى ترجع للقائمة الرئيسية
             await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
         }
 
     } catch (error) {
         console.error('Text handler error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ غير متوقع*', getMainKeyboard());
+        await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getMainKeyboard());
     }
 });
 
@@ -1006,14 +1013,10 @@ bot.on('photo', async (ctx) => {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        console.log(`📸 Processing image from user ${userId}`);
-
-        const processingMsg = await ctx.reply('🔄 جاري تحليل صورة المباراة بالذكاء الاصطناعي...\n⏳ تستخدم الخوارزمية الذكية المخفية');
+        const processingMsg = await ctx.reply('🔄 جاري تحليل صورة المباراة بالذكاء الاصطناعي...');
 
         try {
             const prediction = await goalAI.analyzeImageWithAI(imageUrl);
-            
-            ctx.session.lastImageUrl = imageUrl;
             
             // 📊 تحديث إحصائيات المستخدم
             if (userData.subscription_status !== 'active') {
@@ -1029,7 +1032,6 @@ bot.on('photo', async (ctx) => {
 
 📸 *الصورة:* ✅ تم التحليل بنجاح
 🕒 *الوقت:* ${new Date().toLocaleString('ar-EG')}
-🔧 *الخوارزمية:* ${prediction.algorithm}
 🔐 *الحساب:* \`${userData.onexbet}\`
 💰 *مبلغ الرهان:* ${session.currentBet}$
 
@@ -1044,8 +1046,6 @@ ${prediction.reasoning}
 ${userData.subscription_status !== 'active' ? 
     `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
     `✅ *اشتراك نشط - محاولات غير محدودة*`}
-
-🎯 *استخدم الأزرار في الأسفل للإبلاغ عن النتيجة*
             `;
 
             await ctx.replyWithMarkdown(analysisMessage);
@@ -1053,22 +1053,20 @@ ${userData.subscription_status !== 'active' ?
             // إضافة أزرار النتيجة الجديدة
             const resultKeyboard = Markup.inlineKeyboard([
                 [
-                    Markup.button.callback(`🎊 نجح التوقع - ربح ${session.currentBet * 2}$`, `win_${userData.total_predictions}`),
-                    Markup.button.callback(`🔄 يحتاج محاولة أخرى - ${session.currentBet * 2}$`, `lose_${userData.total_predictions}`)
+                    Markup.button.callback(`🎊 نجح التوقع - ربح ${session.currentBet * 2}$`, `win_${Date.now()}`),
+                    Markup.button.callback(`🔄 يحتاج محاولة أخرى - ${session.currentBet * 2}$`, `lose_${Date.now()}`)
                 ]
             ]);
 
             await ctx.replyWithMarkdown(
                 '📊 *ما هي نتيجة التوقع؟*\n\n' +
-                `🎊 *نجح التوقع* - تربح ${session.currentBet * 2}$ (رأس المال + الربح)\n` +
-                `🔄 *يحتاج محاولة أخرى* - تضاعف الرهان لـ ${session.currentBet * 2}$\n\n` +
+                `🎊 *نجح التوقع* - تربح ${session.currentBet * 2}$\n` +
+                `🔄 *يحتاج محاولة أخرى* - تضاعف الرهان\n\n` +
                 '✨ سيتم تحديث إحصائيك تلقائياً',
                 resultKeyboard
             );
 
             await ctx.deleteMessage(processingMsg.message_id);
-
-            console.log(`✅ Analysis completed for user ${userId}`);
 
         } catch (analysisError) {
             console.error('Analysis error:', analysisError);
@@ -1088,7 +1086,7 @@ ${userData.subscription_status !== 'active' ?
 
     } catch (error) {
         console.error('Photo handler error:', error);
-        await ctx.replyWithMarkdown('❌ *حدث خطأ في التحليل*\n\n🔄 يرجى إرسال الصورة مرة أخرى', getMainKeyboard());
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في التحليل*', getMainKeyboard());
     }
 });
 
@@ -1100,7 +1098,6 @@ bot.on('callback_query', async (ctx) => {
         
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
-            const predictionIndex = parseInt(callbackData.split('_')[1]);
             
             const userData = await dbManager.getUser(userId);
             if (!userData) {
@@ -1123,10 +1120,8 @@ bot.on('callback_query', async (ctx) => {
                     `🎊 *مبروك! نجح التوقع بنجاح* ✨\n\n` +
                     `✅ توقعك كان دقيقاً ومميزاً\n` +
                     `💰 ربحت: ${profit}$\n` +
-                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n` +
-                    `🏦 رأس مالك + الربح: ${ctx.session.originalBet + ctx.session.totalProfit}$\n\n` +
-                    `🚀 *يمكنك الآن المتابعة بالتوقع التالي مباشرة*\n` +
-                    `🎯 اضغط على "التوقع التالي" للاستمرار`,
+                    `💵 إجمالي أرباحك: ${ctx.session.totalProfit}$\n\n` +
+                    `🚀 *يمكنك الآن المتابعة بالتوقع التالي مباشرة*`,
                     getMainKeyboard()
                 );
                 
@@ -1190,7 +1185,7 @@ async function handleAutoPrediction(ctx, userData) {
         return;
     }
 
-    const processingMsg = await ctx.reply('🔄 جاري توليد التوقع التالي بالذكاء الاصطناعي...\n⚽ تستخدم الخوارزمية الذكية المخفية');
+    const processingMsg = await ctx.reply('🔄 جاري توليد التوقع التالي بالذكاء الاصطناعي...');
 
     try {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1220,16 +1215,14 @@ ${nextPrediction.reasoning}
 ${userData.subscription_status !== 'active' ? 
     `🆓 *المحاولات المتبقية:* ${userData.free_attempts}` : 
     `✅ *اشتراك نشط - محاولات غير محدودة*`}
-
-🔄 *تم توليد توقع جديد باستخدام خوارزمية ذكية مخفية*
         `;
 
         await ctx.replyWithMarkdown(predictionMessage);
         
         const resultKeyboard = Markup.inlineKeyboard([
             [
-                Markup.button.callback(`🎊 نجح التوقع - ربح ${ctx.session.currentBet * 2}$`, `win_${userData.total_predictions}`),
-                Markup.button.callback(`🔄 يحتاج محاولة أخرى - ${ctx.session.currentBet * 2}$`, `lose_${userData.total_predictions}`)
+                Markup.button.callback(`🎊 نجح التوقع - ربح ${ctx.session.currentBet * 2}$`, `win_${Date.now()}`),
+                Markup.button.callback(`🔄 يحتاج محاولة أخرى - ${ctx.session.currentBet * 2}$`, `lose_${Date.now()}`)
             ]
         ]);
 
@@ -1404,7 +1397,8 @@ async function handlePaymentScreenshot(ctx, userId) {
         const uploadResult = await imgbbUploader.uploadImage(imageUrl);
         
         if (!uploadResult.success) {
-            throw new Error('Failed to upload image to ImgBB');
+            // استخدام الرابط المباشر إذا فشل الرفع
+            uploadResult.url = imageUrl;
         }
 
         const paymentData = {
@@ -1431,8 +1425,7 @@ async function handlePaymentScreenshot(ctx, userId) {
                             `💰 المبلغ: ${paymentData.amount}$\n` +
                             `📦 الباقة: ${ctx.session.paymentType}\n` +
                             `🆔 الرقم: ${paymentId}\n` +
-                            `📅 الوقت: ${new Date().toLocaleString('ar-EG')}\n` +
-                            `🔗 صورة: ${uploadResult.url}`,
+                            `📅 الوقت: ${new Date().toLocaleString('ar-EG')}`,
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [
@@ -1446,6 +1439,29 @@ async function handlePaymentScreenshot(ctx, userId) {
             );
         } catch (error) {
             console.error('Error notifying admin:', error);
+            // إرسال رسالة نصية إذا فشل إرسال الصورة
+            await bot.telegram.sendMessage(
+                CONFIG.ADMIN_ID,
+                `🆕 *طلب دفع جديد*\n\n` +
+                `👤 المستخدم: ${userData.username}\n` +
+                `🔐 الحساب: ${accountNumber}\n` +
+                `💰 المبلغ: ${paymentData.amount}$\n` +
+                `📦 الباقة: ${ctx.session.paymentType}\n` +
+                `🆔 الرقم: ${paymentId}\n` +
+                `📅 الوقت: ${new Date().toLocaleString('ar-EG')}\n` +
+                `🔗 صورة: ${uploadResult.url}`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: '✅ قبول الاشتراك', callback_data: `accept_${paymentId}` },
+                                { text: '❌ رفض الطلب', callback_data: `reject_${paymentId}` }
+                            ]
+                        ]
+                    }
+                }
+            );
         }
 
         await ctx.replyWithMarkdown(
@@ -1472,95 +1488,105 @@ async function handlePaymentScreenshot(ctx, userId) {
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
-    switch (session.adminStep) {
-        case 'main':
-            await handleAdminMain(ctx, text);
-            break;
-        case 'users':
-            await handleAdminUsers(ctx, text);
-            break;
-        case 'payments':
-            await handleAdminPayments(ctx, text);
-            break;
-        case 'settings':
-            await handleAdminSettings(ctx, text);
-            break;
-        case 'broadcast':
-            await handleAdminBroadcast(ctx, text);
-            break;
-        case 'search':
-            await handleAdminSearch(ctx, text);
-            break;
-        case 'reset_confirm':
-            await handleAdminResetConfirm(ctx, text);
-            break;
-        case 'price_edit':
-            await handleAdminPriceEdit(ctx, text);
-            break;
-        case 'link_edit':
-            await handleAdminLinkEdit(ctx, text);
-            break;
-        default:
-            await handleAdminMain(ctx, text);
-            break;
+    try {
+        switch (session.adminStep) {
+            case 'main':
+                await handleAdminMain(ctx, text);
+                break;
+            case 'users':
+                await handleAdminUsers(ctx, text);
+                break;
+            case 'payments':
+                await handleAdminPayments(ctx, text);
+                break;
+            case 'settings':
+                await handleAdminSettings(ctx, text);
+                break;
+            case 'broadcast':
+                await handleAdminBroadcast(ctx, text);
+                break;
+            case 'search':
+                await handleAdminSearch(ctx, text);
+                break;
+            case 'reset_confirm':
+                await handleAdminResetConfirm(ctx, text);
+                break;
+            case 'price_edit':
+                await handleAdminPriceEdit(ctx, text);
+                break;
+            case 'link_edit':
+                await handleAdminLinkEdit(ctx, text);
+                break;
+            default:
+                await handleAdminMain(ctx, text);
+                break;
+        }
+    } catch (error) {
+        console.error('Admin commands error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الأمر*', getAdminMainKeyboard());
     }
 }
 
 async function handleAdminMain(ctx, text) {
-    switch (text) {
-        case '📊 إحصائيات النظام':
-            await handleAdminStats(ctx);
-            break;
-            
-        case '👥 إدارة المستخدمين':
-            ctx.session.adminStep = 'users';
-            await ctx.replyWithMarkdown('👥 *إدارة المستخدمين*', getAdminUsersKeyboard());
-            break;
-            
-        case '💰 طلبات الدفع':
-            ctx.session.adminStep = 'payments';
-            await ctx.replyWithMarkdown('💰 *إدارة طلبات الدفع*', getAdminPaymentsKeyboard());
-            break;
-            
-        case '⚙️ الإعدادات':
-            ctx.session.adminStep = 'settings';
-            await ctx.replyWithMarkdown('⚙️ *الإعدادات العامة*', getAdminSettingsKeyboard());
-            break;
-            
-        case '📢 إرسال إشعار':
-            ctx.session.adminStep = 'broadcast';
-            await ctx.replyWithMarkdown(
-                '📢 *إرسال إشعار لجميع المستخدمين*\n\n' +
-                '⏰ أرسل الرسالة التي تريد إرسالها لجميع المستخدمين\n' +
-                '❌ أرسل "إلغاء" للتراجع'
-            );
-            break;
-            
-        case '🔍 بحث عن مستخدم':
-            ctx.session.adminStep = 'search';
-            await ctx.replyWithMarkdown(
-                '🔍 *بحث عن مستخدم*\n\n' +
-                'يمكنك البحث باستخدام:\n' +
-                '• رقم التليجرام\n' +
-                '• رقم حساب 1xBet\n' +
-                '• اسم المستخدم\n\n' +
-                '❌ أرسل "رجوع" للتراجع'
-            );
-            break;
+    try {
+        switch (text) {
+            case '📊 إحصائيات النظام':
+                await handleAdminStats(ctx);
+                break;
+                
+            case '👥 إدارة المستخدمين':
+                ctx.session.adminStep = 'users';
+                await ctx.replyWithMarkdown('👥 *إدارة المستخدمين*', getAdminUsersKeyboard());
+                break;
+                
+            case '💰 طلبات الدفع':
+                ctx.session.adminStep = 'payments';
+                await ctx.replyWithMarkdown('💰 *إدارة طلبات الدفع*', getAdminPaymentsKeyboard());
+                break;
+                
+            case '⚙️ الإعدادات':
+                ctx.session.adminStep = 'settings';
+                await ctx.replyWithMarkdown('⚙️ *الإعدادات العامة*', getAdminSettingsKeyboard());
+                break;
+                
+            case '📢 إرسال إشعار':
+                ctx.session.adminStep = 'broadcast';
+                await ctx.replyWithMarkdown(
+                    '📢 *إرسال إشعار لجميع المستخدمين*\n\n' +
+                    '⏰ أرسل الرسالة التي تريد إرسالها لجميع المستخدمين\n' +
+                    '❌ أرسل "إلغاء" للتراجع'
+                );
+                break;
+                
+            case '🔍 بحث عن مستخدم':
+                ctx.session.adminStep = 'search';
+                await ctx.replyWithMarkdown(
+                    '🔍 *بحث عن مستخدم*\n\n' +
+                    'يمكنك البحث باستخدام:\n' +
+                    '• رقم التليجرام\n' +
+                    '• رقم حساب 1xBet\n' +
+                    '• اسم المستخدم\n\n' +
+                    '❌ أرسل "رجوع" للتراجع'
+                );
+                break;
 
-        case '🔧 قفل/فتح البوت':
-            await handleAdminToggleMaintenance(ctx);
-            break;
-            
-        case '🔙 الخروج من الإدمن':
-            ctx.session.adminMode = false;
-            ctx.session.adminStep = null;
-            await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
-            break;
-            
-        default:
-            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminMainKeyboard());
-            break;
+            case '🔧 قفل/فتح البوت':
+                await handleAdminToggleMaintenance(ctx);
+                break;
+                
+            case '🔙 الخروج من الإدمن':
+                ctx.session.adminMode = false;
+                ctx.session.adminStep = null;
+                await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminMainKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin main error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الأمر*', getAdminMainKeyboard());
     }
 }
 
@@ -1591,7 +1617,6 @@ async function handleAdminStats(ctx) {
         
         const activeUsers = users.filter(u => u.subscription_status === 'active');
         const freeUsers = users.filter(u => u.subscription_status === 'free');
-        const expiredUsers = users.filter(u => u.subscription_status === 'expired');
         
         const totalRevenue = acceptedPayments.reduce((sum, payment) => sum + payment.amount, 0);
         const botStats = fakeStats.getStats();
@@ -1603,12 +1628,10 @@ async function handleAdminStats(ctx) {
 • الإجمالي: ${users.length}
 • نشطين: ${activeUsers.length}
 • مجانين: ${freeUsers.length}
-• منتهيين: ${expiredUsers.length}
 
 💰 *المدفوعات:*
 • المعلقة: ${pendingPayments.length}
 • المقبولة: ${acceptedPayments.length}
-• الإجمالي: ${payments.length}
 • الإيرادات: ${totalRevenue}$
 
 🎯 *التوقعات:*
@@ -1631,31 +1654,36 @@ async function handleAdminStats(ctx) {
 }
 
 async function handleAdminUsers(ctx, text) {
-    switch (text) {
-        case '📋 قائمة المستخدمين':
-            await handleAdminUsersList(ctx);
-            break;
-            
-        case '✅ المشتركين النشطين':
-            await handleAdminActiveUsers(ctx);
-            break;
-            
-        case '🆓 المستخدمين المجانين':
-            await handleAdminFreeUsers(ctx);
-            break;
-            
-        case '📈 إحصائيات المستخدمين':
-            await handleAdminUsersStats(ctx);
-            break;
-            
-        case '🔙 رجوع':
-            ctx.session.adminStep = 'main';
-            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-            break;
-            
-        default:
-            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminUsersKeyboard());
-            break;
+    try {
+        switch (text) {
+            case '📋 قائمة المستخدمين':
+                await handleAdminUsersList(ctx);
+                break;
+                
+            case '✅ المشتركين النشطين':
+                await handleAdminActiveUsers(ctx);
+                break;
+                
+            case '🆓 المستخدمين المجانين':
+                await handleAdminFreeUsers(ctx);
+                break;
+                
+            case '📈 إحصائيات المستخدمين':
+                await handleAdminUsersStats(ctx);
+                break;
+                
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminUsersKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin users error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الأمر*', getAdminUsersKeyboard());
     }
 }
 
@@ -1666,7 +1694,7 @@ async function handleAdminUsersList(ctx) {
         let message = `📋 *قائمة المستخدمين (${users.length})*\n\n`;
         
         users.slice(0, 10).forEach((user, index) => {
-            message += `${index + 1}. ${user.username} | ${user.onexbet}\n`;
+            message += `${index + 1}. ${user.username || 'بدون اسم'} | ${user.onexbet}\n`;
             message += `   👤 ${user.user_id} | ${user.subscription_status}\n`;
             if (user.subscription_end_date) {
                 const days = calculateRemainingDays(user.subscription_end_date);
@@ -1695,7 +1723,7 @@ async function handleAdminActiveUsers(ctx) {
         
         activeUsers.slice(0, 10).forEach((user, index) => {
             const days = calculateRemainingDays(user.subscription_end_date);
-            message += `${index + 1}. ${user.username}\n`;
+            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
             message += `   🔐 ${user.onexbet} | ${user.subscription_type}\n`;
             message += `   ⏳ ${days} يوم متبقي\n\n`;
         });
@@ -1719,7 +1747,7 @@ async function handleAdminFreeUsers(ctx) {
         let message = `🆓 *المستخدمين المجانين (${freeUsers.length})*\n\n`;
         
         freeUsers.slice(0, 10).forEach((user, index) => {
-            message += `${index + 1}. ${user.username}\n`;
+            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
             message += `   🔐 ${user.onexbet}\n`;
             message += `   🎯 ${user.free_attempts} محاولة متبقية\n\n`;
         });
@@ -1750,18 +1778,6 @@ async function handleAdminUsersStats(ctx) {
 🎯 إجمالي التوقعات: ${predictions}
 ✅ التوقعات الصحيحة: ${accuracy}
 📊 متوسط الدقة: ${avgAccuracy}%
-
-📅 جديد اليوم: ${users.filter(u => {
-    const joinDate = new Date(u.joined_at);
-    const today = new Date();
-    return joinDate.toDateString() === today.toDateString();
-}).length}
-
-📅 جديد الأسبوع: ${users.filter(u => {
-    const joinDate = new Date(u.joined_at);
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    return joinDate > weekAgo;
-}).length}
         `;
         
         await ctx.replyWithMarkdown(statsMessage, getAdminUsersKeyboard());
@@ -1772,31 +1788,36 @@ async function handleAdminUsersStats(ctx) {
 }
 
 async function handleAdminPayments(ctx, text) {
-    switch (text) {
-        case '📥 الطلبات المعلقة':
-            await handleAdminPendingPayments(ctx);
-            break;
-            
-        case '✅ الطلبات المقبولة':
-            await handleAdminAcceptedPayments(ctx);
-            break;
-            
-        case '❌ الطلبات المرفوضة':
-            await handleAdminRejectedPayments(ctx);
-            break;
-            
-        case '📋 كل الطلبات':
-            await handleAdminAllPayments(ctx);
-            break;
-            
-        case '🔙 رجوع':
-            ctx.session.adminStep = 'main';
-            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-            break;
-            
-        default:
-            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
-            break;
+    try {
+        switch (text) {
+            case '📥 الطلبات المعلقة':
+                await handleAdminPendingPayments(ctx);
+                break;
+                
+            case '✅ الطلبات المقبولة':
+                await handleAdminAcceptedPayments(ctx);
+                break;
+                
+            case '❌ الطلبات المرفوضة':
+                await handleAdminRejectedPayments(ctx);
+                break;
+                
+            case '📋 كل الطلبات':
+                await handleAdminAllPayments(ctx);
+                break;
+                
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin payments error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الأمر*', getAdminPaymentsKeyboard());
     }
 }
 
@@ -1828,7 +1849,6 @@ async function handleAdminPendingPayments(ctx) {
                     }
                 });
             } catch (photoError) {
-                console.error('Error sending payment photo:', photoError);
                 await ctx.replyWithMarkdown(
                     `📥 *طلب دفع معلق #${payment.id}*\n\n` +
                     `👤 المستخدم: ${payment.username}\n` +
@@ -1836,7 +1856,7 @@ async function handleAdminPendingPayments(ctx) {
                     `💰 المبلغ: ${payment.amount}$\n` +
                     `📦 الباقة: ${payment.subscription_type}\n` +
                     `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n\n` +
-                    `❌ *تعذر تحميل صورة الدفع*`,
+                    `🔗 صورة: ${payment.screenshot_url}`,
                     {
                         reply_markup: {
                             inline_keyboard: [
@@ -1937,31 +1957,36 @@ async function handleAdminAllPayments(ctx) {
 }
 
 async function handleAdminSettings(ctx, text) {
-    switch (text) {
-        case '💰 تعديل الأسعار':
-            await handleAdminPriceSettings(ctx);
-            break;
-            
-        case '🔗 تعديل روابط الدفع':
-            await handleAdminPaymentLinks(ctx);
-            break;
-            
-        case '⚙️ الإعدادات العامة':
-            await handleAdminGeneralSettings(ctx);
-            break;
-            
-        case '🔄 إعادة التعيين':
-            await handleAdminReset(ctx);
-            break;
-            
-        case '🔙 رجوع':
-            ctx.session.adminStep = 'main';
-            await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-            break;
-            
-        default:
-            await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminSettingsKeyboard());
-            break;
+    try {
+        switch (text) {
+            case '💰 تعديل الأسعار':
+                await handleAdminPriceSettings(ctx);
+                break;
+                
+            case '🔗 تعديل روابط الدفع':
+                await handleAdminPaymentLinks(ctx);
+                break;
+                
+            case '⚙️ الإعدادات العامة':
+                await handleAdminGeneralSettings(ctx);
+                break;
+                
+            case '🔄 إعادة التعيين':
+                await handleAdminReset(ctx);
+                break;
+                
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+                
+            default:
+                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminSettingsKeyboard());
+                break;
+        }
+    } catch (error) {
+        console.error('Admin settings error:', error);
+        await ctx.replyWithMarkdown('❌ *حدث خطأ في معالجة الأمر*', getAdminSettingsKeyboard());
     }
 }
 
@@ -2204,7 +2229,6 @@ async function handleAdminBroadcast(ctx, text) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (error) {
                 failCount++;
-                console.error(`Failed to send to ${user.user_id}:`, error.message);
             }
         }
 
@@ -2220,7 +2244,6 @@ async function handleAdminBroadcast(ctx, text) {
     }
 
     ctx.session.adminStep = 'main';
-    await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
 }
 
 async function handleAdminSearch(ctx, text) {
@@ -2404,14 +2427,13 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v9.2 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v10.0 is RUNNING!');
     console.log('🤖 Smart Algorithm Version:', goalAI.algorithmVersion);
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
     console.log('🔧 Admin ID:', CONFIG.ADMIN_ID);
     console.log('✅ Full Admin Panel Activated');
-    console.log('📤 ImgBB Uploader Ready');
 }).catch(console.error);
 
 // ⚡ Graceful shutdown
