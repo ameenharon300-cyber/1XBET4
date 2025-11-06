@@ -349,62 +349,6 @@ ${prediction.reasoning}
     }
 }
 
-// 🔐 CHANNEL SUBSCRIPTION CHECK SYSTEM
-class ChannelSubscriptionCheck {
-    constructor(bot, channelId) {
-        this.bot = bot;
-        this.channelId = channelId;
-    }
-
-    async checkUserSubscription(userId) {
-        try {
-            const member = await this.bot.telegram.getChatMember(this.channelId, userId);
-            return member.status === 'member' || member.status === 'administrator' || member.status === 'creator';
-        } catch (error) {
-            console.error('خطأ في التحقق من اشتراك القناة:', error);
-            return false;
-        }
-    }
-
-    async sendSubscriptionRequiredMessage(ctx) {
-        const message = `
-🔒 *اشتراك مطلوب* 🔒
-
-📢 *يجب عليك الانضمام لقناتنا لاستخدام البوت:*
-👉 ${this.channelId}
-
-⚠️ *يرجى الانضمام للقناة ثم أرسل /start مرة أخرى*
-
-💎 *مميزات القناة:*
-• أحدث التوقعات
-• نصائح حصرية
-• تحديثات مباشرة
-• مناقشات مجتمعية
-
-✅ *بعد الانضمام، أرسل /start للمتابعة*
-        `;
-
-        await ctx.replyWithMarkdown(message, {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: '📢 انضم للقناة',
-                            url: 'https://t.me/+LP3ZTdajIeE2YjI0'
-                        }
-                    ],
-                    [
-                        {
-                            text: '✅ لقد انضممت',
-                            callback_data: 'check_subscription'
-                        }
-                    ]
-                ]
-            }
-        });
-    }
-}
-
 // 💾 DATABASE MANAGER
 class DatabaseManager {
     constructor() {
@@ -607,7 +551,6 @@ const fakeStats = new FakeStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 const imageValidator = new ImageValidator(CONFIG.AI_APIS.OPENAI);
 const channelManager = new ChannelManager(bot, "@GEMZGOOL");
-const channelCheck = new ChannelSubscriptionCheck(bot, "@GEMZGOOL");
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -631,8 +574,7 @@ bot.use(session({
         hasActivePrediction: false,
         editingPrices: false,
         editingLinks: false,
-        currentEditingType: null,
-        checkedChannelSubscription: false
+        currentEditingType: null
     })
 }));
 
@@ -740,17 +682,10 @@ function addSubscriptionDays(startDate, type) {
     }
 }
 
-// 🎯 BOT COMMANDS - UPDATED WITH CHANNEL CHECK
+// 🎯 BOT COMMANDS - UPDATED WITHOUT CHANNEL CHECK
 
 bot.start(async (ctx) => {
     try {
-        // التحقق من الاشتراك في القناة أولاً
-        const isSubscribed = await channelCheck.checkUserSubscription(ctx.from.id);
-        if (!isSubscribed) {
-            await channelCheck.sendSubscriptionRequiredMessage(ctx);
-            return;
-        }
-
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: ' + CONFIG.DEVELOPER);
@@ -766,10 +701,17 @@ bot.start(async (ctx) => {
                 caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                         `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
                         `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                        `📢 *القناة:* ${CONFIG.CHANNEL}`
+                        `📢 *القناة:* ${CONFIG.CHANNEL}\n\n` +
+                        `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
+                        `👉 ${CONFIG.CHANNEL}`
             });
         } catch (photoError) {
-            await ctx.replyWithMarkdown(`🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀`);
+            await ctx.replyWithMarkdown(
+                `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
+                `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n\n` +
+                `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
+                `👉 ${CONFIG.CHANNEL}`
+            );
         }
 
         const existingUser = await dbManager.getUser(userId);
@@ -830,25 +772,13 @@ bot.start(async (ctx) => {
     }
 });
 
-// معالجة callback للتحقق من الاشتراك
+// معالجة callback
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
         const userId = ctx.from.id.toString();
         
-        if (callbackData === 'check_subscription') {
-            const isSubscribed = await channelCheck.checkUserSubscription(userId);
-            if (isSubscribed) {
-                await ctx.answerCbQuery('✅ أهلاً بك! يمكنك الآن استخدام البوت');
-                await ctx.deleteMessage();
-                await ctx.replyWithMarkdown('🎉 *أهلاً بك! الآن يمكنك استخدام البوت.*\n\nأرسل /start للبدء');
-            } else {
-                await ctx.answerCbQuery('❌ يرجى الانضمام للقناة أولاً');
-            }
-            return;
-        }
-        
-        // باقي معالجة callbacks
+        // معالجة callbacks
         if (callbackData.startsWith('win_') || callbackData.startsWith('lose_')) {
             const isWin = callbackData.startsWith('win_');
             
@@ -933,16 +863,9 @@ bot.on('callback_query', async (ctx) => {
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED WITH CHANNEL CHECK
+// 📝 HANDLE TEXT MESSAGES - UPDATED WITHOUT CHANNEL CHECK
 bot.on('text', async (ctx) => {
     try {
-        // التحقق من الاشتراك في القناة أولاً
-        const isSubscribed = await channelCheck.checkUserSubscription(ctx.from.id);
-        if (!isSubscribed) {
-            await channelCheck.sendSubscriptionRequiredMessage(ctx);
-            return;
-        }
-
         const settings = await dbManager.getSettings();
         if (settings.maintenance_mode && ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
             await ctx.replyWithMarkdown('🔧 *البوت تحت الصيانة*\n\n⏰ نعمل على تحسين الخدمة لكم\n🔄 سنعود قريباً بأفضل مما كان\n\n📞 للاستفسار: ' + CONFIG.DEVELOPER);
@@ -1195,13 +1118,6 @@ bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
-        
-        // التحقق من الاشتراك في القناة أولاً
-        const isSubscribed = await channelCheck.checkUserSubscription(userId);
-        if (!isSubscribed) {
-            await channelCheck.sendSubscriptionRequiredMessage(ctx);
-            return;
-        }
 
         // 💳 معالجة صور الدفع
         if (session.paymentType) {
