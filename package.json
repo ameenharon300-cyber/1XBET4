@@ -1,0 +1,30 @@
+{
+  "name": "goal-predictor-bot",
+  "version": "10.9.0",
+  "description": "AI Goal Predictor Bot for Telegram",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.7.2",
+    "express": "^4.19.2",
+    "form-data": "^4.0.0",
+    "firebase-admin": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "ai",
+    "goal",
+    "predictor"
+  ],
+  "author": "AMIN - @GEMZGOOLBOT",
+  "license": "MIT"
+}

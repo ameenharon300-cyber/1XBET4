@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: goal-predictor-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN_HERE
+      - key: ADMIN_ID
+        value: YOUR_ADMIN_ID_HERE
+      - key: OPENAI_API_KEY
+        value: YOUR_OPENAI_API_KEY_HERE
+      - key: GEMINI_API_KEY
+        value: YOUR_GEMINI_API_KEY_HERE
+      - key: IMGBB_API_KEY
+        value: YOUR_IMGBB_API_KEY_HERE
+      - key: FIREBASE_PRIVATE_KEY_ID
+        value: YOUR_FIREBASE_PRIVATE_KEY_ID
+      - key: FIREBASE_PRIVATE_KEY
+        value: YOUR_FIREBASE_PRIVATE_KEY
+      - key: FIREBASE_CLIENT_EMAIL
+        value: YOUR_FIREBASE_CLIENT_EMAIL
+      - key: FIREBASE_CLIENT_ID
+        value: YOUR_FIREBASE_CLIENT_ID
+      - key: FIREBASE_CERT_URL
+        value: YOUR_FIREBASE_CERT_URL
+      - key: FIREBASE_PROJECT_ID
+        value: YOUR_FIREBASE_PROJECT_ID
+      - key: FIREBASE_DATABASE_URL
+        value: YOUR_FIREBASE_DATABASE_URL
