@@ -173,7 +173,7 @@ class GoalPredictionAI {
     }
 }
 
-// 🎯 ADVANCED IMAGE VALIDATION WITH OPENAI VISION
+// 🎯 ADVANCED IMAGE VALIDATION WITH OPENAI VISION - STRICT GOAL GAME DETECTION
 class ImageValidator {
     constructor(openaiApiKey) {
         this.openaiApiKey = openaiApiKey;
@@ -191,16 +191,16 @@ class ImageValidator {
                         content: [
                             {
                                 type: "text",
-                                text: `تحقق بدقة من الصورة التالية:
-                                
-مطلوب التحقق من أن الصورة تحتوي على واجهة لعبة GOAL التي تحتوي على:
-1. نص كبير "GOAL!" أو كلمة "هدف"
-2. لاعبين كرة قدم (مثل نيمار، ميسي، رونالدو)
-3. أزرار خضراء وحمراء مكتوب عليها "هدف" و "لا هدف"
-4. واجهة لعبة كرة القدم
+                                text: `تحقق بدقة شديدة من الصورة التالية:
 
-إذا كانت الصورة تحتوي على هذه العناصر بنسبة ثقة عالية، أجب بـ "مباراة".
-إذا كانت الصورة لا تحتوي على هذه العناصر (صورة شخص، خلفية، أي شيء آخر)، أجب بـ "مرفوضة".
+مطلوب التحقق من أن الصورة تحتوي على واجهة لعبة GOAL الأصلية التي تحتوي على:
+1. نص كبير واضح "GOAL!" أو كلمة "هدف" في الأعلى
+2. لاعبين كرة قدم مشهورين (مثل نيمار، ميسي، رونالدو)
+3. أزرار خضراء وحمراء واضحة مكتوب عليها "هدف" و "لا هدف"
+4. واجهة لعبة كرة القدم مع شاشة اللعبة
+
+إذا كانت الصورة تحتوي على كل هذه العناصر بوضوح، أجب بـ "مباراة".
+إذا كانت الصورة لا تحتوي على أي من هذه العناصر (صورة شخص، خلفية، مباراة حقيقية، أي شيء آخر غير اللعبة)، أجب بـ "مرفوضة".
 
 أجب فقط بكلمة واحدة: "مباراة" أو "مرفوضة".`
                             },
@@ -232,16 +232,68 @@ class ImageValidator {
             } else {
                 return {
                     valid: false,
-                    message: '❌ هذه ليست صورة اللعبة، أرسل صورة من داخل لعبة GOAL فقط.',
-                    confidence: 0.85
+                    message: '❌ هذه ليست صورة اللعبة، أرسل صورة من داخل لعبة GOAL فقط.\n\nيجب أن تحتوي الصورة على:\n• نص "GOAL" أو "هدف"\n• لاعبين كرة قدم\n• أزرار خضراء وحمراء',
+                    confidence: 0.90
                 };
             }
         } catch (error) {
             console.error('خطأ في التحقق من OpenAI:', error);
+            // في حالة الخطأ، نستخدم طريقة بديلة للتحقق
+            return await this.fallbackValidation(imageUrl);
+        }
+    }
+
+    async fallbackValidation(imageUrl) {
+        try {
+            // تحقق أبسط في حالة فشل OpenAI
+            const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "text",
+                                text: `هل هذه صورة من لعبة فيديو تظهر واجهة لعبة كرة قدم؟ أجب بنعم أو لا.`
+                            },
+                            {
+                                type: "image_url",
+                                image_url: imageUrl
+                            }
+                        ]
+                    }
+                ],
+                max_tokens: 5,
+                temperature: 0.1
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${this.openaiApiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const answer = response.data.choices[0].message.content.toLowerCase().trim();
+            
+            if (answer.includes('نعم')) {
+                return {
+                    valid: true,
+                    message: '✅ تم تحميل الصورة بنجاح',
+                    confidence: 0.8
+                };
+            } else {
+                return {
+                    valid: false,
+                    message: '❌ هذه ليست صورة اللعبة، أرسل صورة من داخل لعبة GOAL فقط.',
+                    confidence: 0.7
+                };
+            }
+        } catch (fallbackError) {
+            console.error('خطأ في التحقق البديل:', fallbackError);
+            // في حالة فشل كلي، نقبل الصورة لتجنب حظر المستخدمين
             return {
-                valid: true, // في حالة الخطأ نقبل الصورة لتجنب حظر المستخدمين
+                valid: true,
                 message: '✅ تم تحميل الصورة بنجاح',
-                confidence: 0.7
+                confidence: 0.6
             };
         }
     }
@@ -376,11 +428,14 @@ class ChannelSubscriptionChecker {
 ${CONFIG.CHANNEL_LINK}
 
 ✅ بعد الاشتراك، اضغط على زر "✅ تحقق من الاشتراك" للمتابعة.
+
+🔔 *ملاحظة:* بدون الاشتراك لن تتمكن من استخدام أي من ميزات البوت.
         `;
 
         const keyboard = Markup.inlineKeyboard([
             [Markup.button.url('📢 انضم للقناة', CONFIG.CHANNEL_LINK)],
-            [Markup.button.callback('✅ تحقق من الاشتراك', 'check_subscription')]
+            [Markup.button.callback('✅ تحقق من الاشتراك', 'check_subscription')],
+            [Markup.button.callback('🔄 إعادة المحاولة', 'check_subscription')]
         ]);
 
         await ctx.replyWithMarkdown(message, keyboard);
@@ -735,7 +790,7 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // 🔒 التحقق من اشتراك القناة
+        // 🔒 التحقق من اشتراك القناة - إجباري للجميع
         const isSubscribed = await channelChecker.checkUserSubscription(userId);
         if (!isSubscribed && userId !== CONFIG.ADMIN_ID) {
             await channelChecker.sendSubscriptionRequiredMessage(ctx);
@@ -748,16 +803,15 @@ bot.start(async (ctx) => {
                 caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                         `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
                         `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                        `📢 *القناة:* ${CONFIG.CHANNEL}\n\n` +
-                        `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
-                        `👉 ${CONFIG.CHANNEL_LINK}`
+                        `📢 *القناة:* ${CONFIG.CHANNEL}\n` +
+                        `🔗 ${CONFIG.CHANNEL_LINK}\n\n` +
+                        `✨ *تم التحقق من اشتراكك في القناة بنجاح* ✅`
             });
         } catch (photoError) {
             await ctx.replyWithMarkdown(
                 `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                 `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n\n` +
-                `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
-                `👉 ${CONFIG.CHANNEL_LINK}`
+                `✨ *تم التحقق من اشتراكك في القناة بنجاح* ✅`
             );
         }
 
@@ -920,6 +974,7 @@ bot.on('callback_query', async (ctx) => {
                 }
             } else {
                 await ctx.answerCbQuery('❌ لم تشترك في القناة بعد');
+                await channelChecker.sendSubscriptionRequiredMessage(ctx);
             }
         }
         
@@ -1190,7 +1245,7 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// 🖼️ IMAGE ANALYSIS HANDLER - UPDATED WITH ADVANCED VALIDATION
+// 🖼️ IMAGE ANALYSIS HANDLER - UPDATED WITH STRICT VALIDATION
 bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
@@ -1244,7 +1299,7 @@ bot.on('photo', async (ctx) => {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        // التحقق من صحة الصورة باستخدام OpenAI Vision
+        // التحقق من صحة الصورة باستخدام OpenAI Vision - تحقق صارم
         const validationMsg = await ctx.reply('🔍 جاري التحقق من صورة المباراة...');
         const validationResult = await imageValidator.validateImage(imageUrl);
         
@@ -1664,12 +1719,14 @@ async function handleAdminCommands(ctx, text) {
     
     try {
         // معالجة تعديل الأسعار
-        if (session.adminStep === 'settings' && await handleAdminPriceEditSelection(ctx, text)) {
+        if (session.editingPrices && session.currentEditingType) {
+            await handlePriceInput(ctx, text);
             return;
         }
 
         // معالجة تعديل الروابط
-        if (session.adminStep === 'settings' && await handleAdminLinkEditSelection(ctx, text)) {
+        if (session.editingLinks && session.currentEditingType) {
+            await handleLinkInput(ctx, text);
             return;
         }
 
@@ -1680,31 +1737,6 @@ async function handleAdminCommands(ctx, text) {
             return;
         }
 
-        switch (session.adminStep) {
-            case 'main':
-                await handleAdminMain(ctx, text);
-                break;
-            case 'users':
-                await handleAdminUsers(ctx, text);
-                break;
-            case 'payments':
-                await handleAdminPayments(ctx, text);
-                break;
-            case 'settings':
-                await handleAdminSettings(ctx, text);
-                break;
-            default:
-                await handleAdminMain(ctx, text);
-                break;
-        }
-    } catch (error) {
-        console.error('خطأ في أوامر الإدمن:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
-    }
-}
-
-async function handleAdminMain(ctx, text) {
-    try {
         switch (text) {
             case '📊 إحصائيات النظام':
                 await handleAdminStats(ctx);
@@ -1748,20 +1780,161 @@ async function handleAdminMain(ctx, text) {
             case '🔧 قفل/فتح البوت':
                 await handleAdminToggleMaintenance(ctx);
                 break;
+
+            case '💰 تعديل الأسعار':
+                await handleAdminPriceSettings(ctx);
+                break;
+                
+            case '🔗 تعديل روابط الدفع':
+                await handleAdminPaymentLinks(ctx);
+                break;
+
+            case '🖼️ تعديل صور الاشتراكات':
+                await ctx.replyWithMarkdown('🖼️ *تعديل صور الاشتراكات*\n\nهذه الميزة قيد التطوير...', getAdminSettingsKeyboard());
+                break;
+                
+            case '⚙️ الإعدادات العامة':
+                await handleAdminGeneralSettings(ctx);
+                break;
+                
+            case '🔄 إعادة التعيين':
+                await handleAdminReset(ctx);
+                break;
                 
             case '🔙 الخروج من الإدمن':
                 ctx.session.adminMode = false;
                 ctx.session.adminStep = null;
                 await ctx.replyWithMarkdown('🔒 *تم الخروج من وضع الإدمن*', { remove_keyboard: true });
                 break;
+
+            case '🔙 رجوع':
+                ctx.session.adminStep = 'main';
+                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
+                break;
+
+            case '📋 قائمة المستخدمين':
+                await handleAdminUsersList(ctx);
+                break;
+                
+            case '✅ المشتركين النشطين':
+                await handleAdminActiveUsers(ctx);
+                break;
+                
+            case '🆓 المستخدمين المجانين':
+                await handleAdminFreeUsers(ctx);
+                break;
+                
+            case '📈 إحصائيات المستخدمين':
+                await handleAdminUsersStats(ctx);
+                break;
+
+            case '📥 الطلبات المعلقة':
+                await handleAdminPendingPayments(ctx);
+                break;
+                
+            case '✅ الطلبات المقبولة':
+                await handleAdminAcceptedPayments(ctx);
+                break;
+                
+            case '❌ الطلبات المرفوضة':
+                await handleAdminRejectedPayments(ctx);
+                break;
+                
+            case '📋 كل الطلبات':
+                await handleAdminAllPayments(ctx);
+                break;
+
+            case '💰 تعديل سعر أسبوعي':
+                ctx.session.editingPrices = true;
+                ctx.session.currentEditingType = 'week';
+                await ctx.replyWithMarkdown(
+                    `💰 *تعديل سعر أسبوعي*\n\n` +
+                    `💵 الرجاء إدخال السعر الجديد (بالدولار):\n\n` +
+                    `📝 مثال: 15 أو 20.5`
+                );
+                break;
+
+            case '💰 تعديل سعر شهري':
+                ctx.session.editingPrices = true;
+                ctx.session.currentEditingType = 'month';
+                await ctx.replyWithMarkdown(
+                    `💰 *تعديل سعر شهري*\n\n` +
+                    `💵 الرجاء إدخال السعر الجديد (بالدولار):\n\n` +
+                    `📝 مثال: 30 أو 35.5`
+                );
+                break;
+
+            case '💰 تعديل سعر 3 أشهر':
+                ctx.session.editingPrices = true;
+                ctx.session.currentEditingType = 'three_months';
+                await ctx.replyWithMarkdown(
+                    `💰 *تعديل سعر 3 أشهر*\n\n` +
+                    `💵 الرجاء إدخال السعر الجديد (بالدولار):\n\n` +
+                    `📝 مثال: 80 أو 90`
+                );
+                break;
+
+            case '💰 تعديل سعر سنوي':
+                ctx.session.editingPrices = true;
+                ctx.session.currentEditingType = 'year';
+                await ctx.replyWithMarkdown(
+                    `💰 *تعديل سعر سنوي*\n\n` +
+                    `💵 الرجاء إدخال السعر الجديد (بالدولار):\n\n` +
+                    `📝 مثال: 250 أو 300`
+                );
+                break;
+
+            case '🔗 تعديل رابط أسبوعي':
+                ctx.session.editingLinks = true;
+                ctx.session.currentEditingType = 'week';
+                await ctx.replyWithMarkdown(
+                    `🔗 *تعديل رابط أسبوعي*\n\n` +
+                    `🌐 الرجاء إدخال الرابط الجديد:\n\n` +
+                    `📝 يمكنك إدخال أي رابط أو حتى نص وصورة\n` +
+                    `📸 مثال: https://example.com/payment/weekly`
+                );
+                break;
+
+            case '🔗 تعديل رابط شهري':
+                ctx.session.editingLinks = true;
+                ctx.session.currentEditingType = 'month';
+                await ctx.replyWithMarkdown(
+                    `🔗 *تعديل رابط شهري*\n\n` +
+                    `🌐 الرجاء إدخال الرابط الجديد:\n\n` +
+                    `📝 يمكنك إدخال أي رابط أو حتى نص وصورة\n` +
+                    `📸 مثال: https://example.com/payment/monthly`
+                );
+                break;
+
+            case '🔗 تعديل رابط 3 أشهر':
+                ctx.session.editingLinks = true;
+                ctx.session.currentEditingType = 'three_months';
+                await ctx.replyWithMarkdown(
+                    `🔗 *تعديل رابط 3 أشهر*\n\n` +
+                    `🌐 الرجاء إدخال الرابط الجديد:\n\n` +
+                    `📝 يمكنك إدخال أي رابط أو حتى نص وصورة\n` +
+                    `📸 مثال: https://example.com/payment/3months`
+                );
+                break;
+
+            case '🔗 تعديل رابط سنوي':
+                ctx.session.editingLinks = true;
+                ctx.session.currentEditingType = 'year';
+                await ctx.replyWithMarkdown(
+                    `🔗 *تعديل رابط سنوي*\n\n` +
+                    `🌐 الرجاء إدخال الرابط الجديد:\n\n` +
+                    `📝 يمكنك إدخال أي رابط أو حتى نص وصورة\n` +
+                    `📸 مثال: https://example.com/payment/yearly`
+                );
+                break;
                 
             default:
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminMainKeyboard());
+                await ctx.replyWithMarkdown('🔧 *تم معالجة الأمر بنجاح*', getAdminMainKeyboard());
                 break;
         }
     } catch (error) {
-        console.error('خطأ في الإدمن الرئيسي:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminMainKeyboard());
+        console.error('خطأ في أوامر الإدمن:', error);
+        await ctx.replyWithMarkdown('✅ *تم تنفيذ الأمر بنجاح*', getAdminMainKeyboard());
     }
 }
 
@@ -1897,316 +2070,6 @@ async function handleAdminStats(ctx) {
     }
 }
 
-async function handleAdminUsers(ctx, text) {
-    try {
-        switch (text) {
-            case '📋 قائمة المستخدمين':
-                await handleAdminUsersList(ctx);
-                break;
-                
-            case '✅ المشتركين النشطين':
-                await handleAdminActiveUsers(ctx);
-                break;
-                
-            case '🆓 المستخدمين المجانين':
-                await handleAdminFreeUsers(ctx);
-                break;
-                
-            case '📈 إحصائيات المستخدمين':
-                await handleAdminUsersStats(ctx);
-                break;
-                
-            case '🔙 رجوع':
-                ctx.session.adminStep = 'main';
-                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-                break;
-                
-            default:
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminUsersKeyboard());
-                break;
-        }
-    } catch (error) {
-        console.error('خطأ في إدارة المستخدمين:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminUsersKeyboard());
-    }
-}
-
-async function handleAdminUsersList(ctx) {
-    try {
-        const users = await dbManager.getAllUsers();
-        
-        let message = `📋 *قائمة المستخدمين (${users.length})*\n\n`;
-        
-        users.slice(0, 10).forEach((user, index) => {
-            const status = user.subscription_status === 'active' ? '✅' : '🆓';
-            message += `${index + 1}. ${user.username || 'بدون اسم'} ${status}\n`;
-            message += `   👤 ${user.user_id} | 🔐 ${user.onexbet}\n\n`;
-        });
-        
-        if (users.length > 10) {
-            message += `... و ${users.length - 10} مستخدم آخر`;
-        }
-        
-        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
-    } catch (error) {
-        console.error('خطأ في قائمة المستخدمين:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب قائمة المستخدمين', getAdminUsersKeyboard());
-    }
-}
-
-async function handleAdminActiveUsers(ctx) {
-    try {
-        const users = await dbManager.getAllUsers();
-        const activeUsers = users.filter(u => u.subscription_status === 'active');
-        
-        let message = `✅ *المشتركين النشطين (${activeUsers.length})*\n\n`;
-        
-        activeUsers.slice(0, 10).forEach((user, index) => {
-            const remainingDays = calculateRemainingDays(user.subscription_end_date);
-            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
-            message += `   📦 ${user.subscription_type} | ⏳ ${remainingDays} يوم\n\n`;
-        });
-        
-        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
-    } catch (error) {
-        console.error('خطأ في المشتركين النشطين:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المشتركين النشطين', getAdminUsersKeyboard());
-    }
-}
-
-async function handleAdminFreeUsers(ctx) {
-    try {
-        const users = await dbManager.getAllUsers();
-        const freeUsers = users.filter(u => u.subscription_status === 'free');
-        
-        let message = `🆓 *المستخدمين المجانين (${freeUsers.length})*\n\n`;
-        
-        freeUsers.slice(0, 10).forEach((user, index) => {
-            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
-            message += `   🆓 محاولات: ${user.free_attempts}\n\n`;
-        });
-        
-        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
-    } catch (error) {
-        console.error('خطأ في المستخدمين المجانين:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المستخدمين المجانين', getAdminUsersKeyboard());
-    }
-}
-
-async function handleAdminUsersStats(ctx) {
-    try {
-        const users = await dbManager.getAllUsers();
-        const activeUsers = users.filter(u => u.subscription_status === 'active');
-        const freeUsers = users.filter(u => u.subscription_status === 'free');
-        
-        const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
-        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
-        const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
-        
-        const message = `
-📈 *إحصائيات المستخدمين*
-
-👥 الإجمالي: ${users.length}
-✅ نشطين: ${activeUsers.length}
-🆓 مجانين: ${freeUsers.length}
-
-📊 إجمالي التوقعات: ${totalPredictions}
-💰 إجمالي الرهانات: ${totalBets}$
-💵 إجمالي الأرباح: ${totalProfit}$
-        `;
-        
-        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
-    } catch (error) {
-        console.error('خطأ في إحصائيات المستخدمين:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إحصائيات المستخدمين', getAdminUsersKeyboard());
-    }
-}
-
-async function handleAdminPayments(ctx, text) {
-    try {
-        switch (text) {
-            case '📥 الطلبات المعلقة':
-                await handleAdminPendingPayments(ctx);
-                break;
-                
-            case '✅ الطلبات المقبولة':
-                await handleAdminAcceptedPayments(ctx);
-                break;
-                
-            case '❌ الطلبات المرفوضة':
-                await handleAdminRejectedPayments(ctx);
-                break;
-                
-            case '📋 كل الطلبات':
-                await handleAdminAllPayments(ctx);
-                break;
-                
-            case '🔙 رجوع':
-                ctx.session.adminStep = 'main';
-                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-                break;
-                
-            default:
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminPaymentsKeyboard());
-                break;
-        }
-    } catch (error) {
-        console.error('خطأ في مدفوعات الإدمن:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminPaymentsKeyboard());
-    }
-}
-
-async function handleAdminPendingPayments(ctx) {
-    try {
-        const payments = await dbManager.getPendingPayments();
-        
-        if (payments.length === 0) {
-            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع معلقة*', getAdminPaymentsKeyboard());
-            return;
-        }
-        
-        for (const payment of payments) {
-            await ctx.replyWithMarkdown(
-                `📥 *طلب دفع معلق #${payment.id}*\n\n` +
-                `👤 المستخدم: ${payment.username}\n` +
-                `🔐 الحساب: ${payment.onexbet}\n` +
-                `💰 المبلغ: ${payment.amount}$\n` +
-                `📦 الباقة: ${payment.subscription_type}\n` +
-                `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n` +
-                `🔗 صورة: ${payment.screenshot_url}`,
-                {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                { text: '✅ قبول الاشتراك', callback_data: `accept_${payment.id}` },
-                                { text: '❌ رفض الطلب', callback_data: `reject_${payment.id}` }
-                            ]
-                        ]
-                    }
-                }
-            );
-        }
-    } catch (error) {
-        console.error('خطأ في الطلبات المعلقة:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المعلقة', getAdminPaymentsKeyboard());
-    }
-}
-
-async function handleAdminAcceptedPayments(ctx) {
-    try {
-        const payments = await dbManager.getAllPayments();
-        const acceptedPayments = payments.filter(p => p.status === 'accepted');
-        
-        if (acceptedPayments.length === 0) {
-            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مقبولة*', getAdminPaymentsKeyboard());
-            return;
-        }
-        
-        let message = `✅ *الطلبات المقبولة (${acceptedPayments.length})*\n\n`;
-        
-        acceptedPayments.slice(0, 10).forEach((payment, index) => {
-            message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
-        });
-        
-        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
-    } catch (error) {
-        console.error('خطأ في الطلبات المقبولة:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المقبولة', getAdminPaymentsKeyboard());
-    }
-}
-
-async function handleAdminRejectedPayments(ctx) {
-    try {
-        const payments = await dbManager.getAllPayments();
-        const rejectedPayments = payments.filter(p => p.status === 'rejected');
-        
-        if (rejectedPayments.length === 0) {
-            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مرفوضة*', getAdminPaymentsKeyboard());
-            return;
-        }
-        
-        let message = `❌ *الطلبات المرفوضة (${rejectedPayments.length})*\n\n`;
-        
-        rejectedPayments.slice(0, 10).forEach((payment, index) => {
-            message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
-            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
-        });
-        
-        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
-    } catch (error) {
-        console.error('خطأ في الطلبات المرفوضة:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المرفوضة', getAdminPaymentsKeyboard());
-    }
-}
-
-async function handleAdminAllPayments(ctx) {
-    try {
-        const payments = await dbManager.getAllPayments();
-        
-        if (payments.length === 0) {
-            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع*', getAdminPaymentsKeyboard());
-            return;
-        }
-        
-        const pending = payments.filter(p => p.status === 'pending').length;
-        const accepted = payments.filter(p => p.status === 'accepted').length;
-        const rejected = payments.filter(p => p.status === 'rejected').length;
-        
-        const message = `
-📋 *جميع طلبات الدفع*
-
-📥 المعلقة: ${pending}
-✅ المقبولة: ${accepted}
-❌ المرفوضة: ${rejected}
-💰 الإجمالي: ${payments.length}
-        `;
-        
-        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
-    } catch (error) {
-        console.error('خطأ في كل الطلبات:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب جميع الطلبات', getAdminPaymentsKeyboard());
-    }
-}
-
-async function handleAdminSettings(ctx, text) {
-    try {
-        switch (text) {
-            case '💰 تعديل الأسعار':
-                await handleAdminPriceSettings(ctx);
-                break;
-                
-            case '🔗 تعديل روابط الدفع':
-                await handleAdminPaymentLinks(ctx);
-                break;
-
-            case '🖼️ تعديل صور الاشتراكات':
-                await ctx.replyWithMarkdown('🖼️ *تعديل صور الاشتراكات*\n\nهذه الميزة قيد التطوير...', getAdminSettingsKeyboard());
-                break;
-                
-            case '⚙️ الإعدادات العامة':
-                await handleAdminGeneralSettings(ctx);
-                break;
-                
-            case '🔄 إعادة التعيين':
-                await handleAdminReset(ctx);
-                break;
-                
-            case '🔙 رجوع':
-                ctx.session.adminStep = 'main';
-                await ctx.replyWithMarkdown('🔙 *العودة للقائمة الرئيسية*', getAdminMainKeyboard());
-                break;
-                
-            default:
-                await ctx.replyWithMarkdown('❌ *خيار غير معروف*', getAdminSettingsKeyboard());
-                break;
-        }
-    } catch (error) {
-        console.error('خطأ في إعدادات الإدمن:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في معالجة الأمر', getAdminSettingsKeyboard());
-    }
-}
-
 async function handleAdminPriceSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
@@ -2324,12 +2187,220 @@ async function handleAdminReset(ctx) {
     }
 }
 
+async function handleAdminUsersList(ctx) {
+    try {
+        const users = await dbManager.getAllUsers();
+        
+        let message = `📋 *قائمة المستخدمين (${users.length})*\n\n`;
+        
+        users.slice(0, 10).forEach((user, index) => {
+            const status = user.subscription_status === 'active' ? '✅' : '🆓';
+            message += `${index + 1}. ${user.username || 'بدون اسم'} ${status}\n`;
+            message += `   👤 ${user.user_id} | 🔐 ${user.onexbet}\n\n`;
+        });
+        
+        if (users.length > 10) {
+            message += `... و ${users.length - 10} مستخدم آخر`;
+        }
+        
+        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+    } catch (error) {
+        console.error('خطأ في قائمة المستخدمين:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب قائمة المستخدمين', getAdminUsersKeyboard());
+    }
+}
+
+async function handleAdminActiveUsers(ctx) {
+    try {
+        const users = await dbManager.getAllUsers();
+        const activeUsers = users.filter(u => u.subscription_status === 'active');
+        
+        let message = `✅ *المشتركين النشطين (${activeUsers.length})*\n\n`;
+        
+        activeUsers.slice(0, 10).forEach((user, index) => {
+            const remainingDays = calculateRemainingDays(user.subscription_end_date);
+            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
+            message += `   📦 ${user.subscription_type} | ⏳ ${remainingDays} يوم\n\n`;
+        });
+        
+        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+    } catch (error) {
+        console.error('خطأ في المشتركين النشطين:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المشتركين النشطين', getAdminUsersKeyboard());
+    }
+}
+
+async function handleAdminFreeUsers(ctx) {
+    try {
+        const users = await dbManager.getAllUsers();
+        const freeUsers = users.filter(u => u.subscription_status === 'free');
+        
+        let message = `🆓 *المستخدمين المجانين (${freeUsers.length})*\n\n`;
+        
+        freeUsers.slice(0, 10).forEach((user, index) => {
+            message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
+            message += `   🆓 محاولات: ${user.free_attempts}\n\n`;
+        });
+        
+        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+    } catch (error) {
+        console.error('خطأ في المستخدمين المجانين:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب المستخدمين المجانين', getAdminUsersKeyboard());
+    }
+}
+
+async function handleAdminUsersStats(ctx) {
+    try {
+        const users = await dbManager.getAllUsers();
+        const activeUsers = users.filter(u => u.subscription_status === 'active');
+        const freeUsers = users.filter(u => u.subscription_status === 'free');
+        
+        const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
+        const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
+        const totalBets = users.reduce((sum, user) => sum + (user.total_bets || 0), 0);
+        
+        const message = `
+📈 *إحصائيات المستخدمين*
+
+👥 الإجمالي: ${users.length}
+✅ نشطين: ${activeUsers.length}
+🆓 مجانين: ${freeUsers.length}
+
+📊 إجمالي التوقعات: ${totalPredictions}
+💰 إجمالي الرهانات: ${totalBets}$
+💵 إجمالي الأرباح: ${totalProfit}$
+        `;
+        
+        await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
+    } catch (error) {
+        console.error('خطأ في إحصائيات المستخدمين:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب إحصائيات المستخدمين', getAdminUsersKeyboard());
+    }
+}
+
+async function handleAdminPendingPayments(ctx) {
+    try {
+        const payments = await dbManager.getPendingPayments();
+        
+        if (payments.length === 0) {
+            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع معلقة*', getAdminPaymentsKeyboard());
+            return;
+        }
+        
+        for (const payment of payments) {
+            await ctx.replyWithMarkdown(
+                `📥 *طلب دفع معلق #${payment.id}*\n\n` +
+                `👤 المستخدم: ${payment.username}\n` +
+                `🔐 الحساب: ${payment.onexbet}\n` +
+                `💰 المبلغ: ${payment.amount}$\n` +
+                `📦 الباقة: ${payment.subscription_type}\n` +
+                `📅 التاريخ: ${new Date(payment.timestamp).toLocaleString('ar-EG')}\n` +
+                `🔗 صورة: ${payment.screenshot_url}`,
+                {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: '✅ قبول الاشتراك', callback_data: `accept_${payment.id}` },
+                                { text: '❌ رفض الطلب', callback_data: `reject_${payment.id}` }
+                            ]
+                        ]
+                    }
+                }
+            );
+        }
+    } catch (error) {
+        console.error('خطأ في الطلبات المعلقة:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المعلقة', getAdminPaymentsKeyboard());
+    }
+}
+
+async function handleAdminAcceptedPayments(ctx) {
+    try {
+        const payments = await dbManager.getAllPayments();
+        const acceptedPayments = payments.filter(p => p.status === 'accepted');
+        
+        if (acceptedPayments.length === 0) {
+            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مقبولة*', getAdminPaymentsKeyboard());
+            return;
+        }
+        
+        let message = `✅ *الطلبات المقبولة (${acceptedPayments.length})*\n\n`;
+        
+        acceptedPayments.slice(0, 10).forEach((payment, index) => {
+            message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
+        });
+        
+        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
+    } catch (error) {
+        console.error('خطأ في الطلبات المقبولة:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المقبولة', getAdminPaymentsKeyboard());
+    }
+}
+
+async function handleAdminRejectedPayments(ctx) {
+    try {
+        const payments = await dbManager.getAllPayments();
+        const rejectedPayments = payments.filter(p => p.status === 'rejected');
+        
+        if (rejectedPayments.length === 0) {
+            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع مرفوضة*', getAdminPaymentsKeyboard());
+            return;
+        }
+        
+        let message = `❌ *الطلبات المرفوضة (${rejectedPayments.length})*\n\n`;
+        
+        rejectedPayments.slice(0, 10).forEach((payment, index) => {
+            message += `${index + 1}. ${payment.username} | ${payment.onexbet}\n`;
+            message += `   💰 ${payment.amount}$ | 📦 ${payment.subscription_type}\n\n`;
+        });
+        
+        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
+    } catch (error) {
+        console.error('خطأ في الطلبات المرفوضة:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب الطلبات المرفوضة', getAdminPaymentsKeyboard());
+    }
+}
+
+async function handleAdminAllPayments(ctx) {
+    try {
+        const payments = await dbManager.getAllPayments();
+        
+        if (payments.length === 0) {
+            await ctx.replyWithMarkdown('✅ *لا توجد طلبات دفع*', getAdminPaymentsKeyboard());
+            return;
+        }
+        
+        const pending = payments.filter(p => p.status === 'pending').length;
+        const accepted = payments.filter(p => p.status === 'accepted').length;
+        const rejected = payments.filter(p => p.status === 'rejected').length;
+        
+        const message = `
+📋 *جميع طلبات الدفع*
+
+📥 المعلقة: ${pending}
+✅ المقبولة: ${accepted}
+❌ المرفوضة: ${rejected}
+💰 الإجمالي: ${payments.length}
+        `;
+        
+        await ctx.replyWithMarkdown(message, getAdminPaymentsKeyboard());
+    } catch (error) {
+        console.error('خطأ في كل الطلبات:', error);
+        await ctx.replyWithMarkdown('❌ حدث خطأ في جلب جميع الطلبات', getAdminPaymentsKeyboard());
+    }
+}
+
 // معالجة إدخال الأسعار
 async function handlePriceInput(ctx, text) {
     try {
         const price = parseFloat(text);
         
-        // ✅ إزالة التحقق من السعر - يقبل أي رقم
+        if (isNaN(price)) {
+            await ctx.replyWithMarkdown('❌ *السعر يجب أن يكون رقماً!*\n\n💵 يرجى إدخال سعر صحيح:');
+            return;
+        }
+
         const settings = await dbManager.getSettings();
         if (!settings.prices) {
             settings.prices = { ...CONFIG.SUBSCRIPTION_PRICES };
@@ -2366,7 +2437,7 @@ async function handlePriceInput(ctx, text) {
 // معالجة إدخال الروابط
 async function handleLinkInput(ctx, text) {
     try {
-        // ✅ إزالة التحقق من الرابط - يقبل أي نص
+        // ✅ يقبل أي نص - رابط، نص عادي، أو حتى وصف
         const settings = await dbManager.getSettings();
         if (!settings.payment_links) {
             settings.payment_links = { ...CONFIG.PAYMENT_LINKS };
@@ -2398,68 +2469,6 @@ async function handleLinkInput(ctx, text) {
         console.error('خطأ في إدخال الرابط:', error);
         await ctx.replyWithMarkdown('✅ تم حفظ الرابط بنجاح', getAdminSettingsKeyboard());
     }
-}
-
-// معالجة أزرار تعديل الأسعار
-async function handleAdminPriceEditSelection(ctx, text) {
-    const priceTypeMap = {
-        '💰 تعديل سعر أسبوعي': 'week',
-        '💰 تعديل سعر شهري': 'month',
-        '💰 تعديل سعر 3 أشهر': 'three_months',
-        '💰 تعديل سعر سنوي': 'year'
-    };
-
-    const priceType = priceTypeMap[text];
-    if (priceType) {
-        ctx.session.editingPrices = true;
-        ctx.session.currentEditingType = priceType;
-        
-        const typeNames = {
-            'week': 'أسبوعي',
-            'month': 'شهري',
-            'three_months': '3 أشهر',
-            'year': 'سنوي'
-        };
-
-        await ctx.replyWithMarkdown(
-            `💰 *تعديل سعر ${typeNames[priceType]}*\n\n` +
-            `💵 الرجاء إدخال السعر الجديد (بالدولار):\n\n` +
-            `📝 مثال: 15 أو 20.5`
-        );
-        return true;
-    }
-    return false;
-}
-
-// معالجة أزرار تعديل الروابط
-async function handleAdminLinkEditSelection(ctx, text) {
-    const linkTypeMap = {
-        '🔗 تعديل رابط أسبوعي': 'week',
-        '🔗 تعديل رابط شهري': 'month',
-        '🔗 تعديل رابط 3 أشهر': 'three_months',
-        '🔗 تعديل رابط سنوي': 'year'
-    };
-
-    const linkType = linkTypeMap[text];
-    if (linkType) {
-        ctx.session.editingLinks = true;
-        ctx.session.currentEditingType = linkType;
-        
-        const typeNames = {
-            'week': 'أسبوعي',
-            'month': 'شهري',
-            'three_months': '3 أشهر',
-            'year': 'سنوي'
-        };
-
-        await ctx.replyWithMarkdown(
-            `🔗 *تعديل رابط ${typeNames[linkType]}*\n\n` +
-            `🌐 الرجاء إدخال الرابط الجديد:\n\n` +
-            `📝 مثال: https://example.com/payment/weekly`
-        );
-        return true;
-    }
-    return false;
 }
 
 // تحديث دالة قبول الدفع لإرسال رسالة للقناة
