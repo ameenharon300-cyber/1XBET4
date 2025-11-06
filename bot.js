@@ -37,6 +37,7 @@ const CONFIG = {
     VERSION: "10.8.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
+    CHANNEL_LINK: "https://t.me/+LP3ZTdajIeE2YjI0",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
     ANALYSIS_IMAGE: "https://i.ibb.co/VYjf05S0/Screenshot.png",
     IMGBB_API_KEY: "42b155a527bee21e62e524a31fe9b1ee"
@@ -133,7 +134,7 @@ class FakeStatistics {
     }
 }
 
-// 🧠 SMART GOAL PREDICTION ENGINE - UPDATED FOR ARABIC
+// 🧠 SMART GOAL PREDICTION ENGINE - UPDATED FOR SIMPLE GOAL/NO GOAL
 class GoalPredictionAI {
     constructor() {
         this.algorithmVersion = "10.8";
@@ -141,18 +142,18 @@ class GoalPredictionAI {
 
     generateSmartPrediction(userId) {
         const isGoal = Math.random() > 0.5;
-        const probability = Math.floor(Math.random() * 30) + 60;
+        const probability = Math.floor(Math.random() * 30) + 70;
         
         const prediction = {
-            type: isGoal ? '⚽ هدف مؤكد' : '🛡️ دفاع قوي',
+            type: isGoal ? '⚽ GOAL - هدف' : '❌ NO GOAL - لا هدف',
             probability: probability,
             confidence: 100,
             reasoning: isGoal ? 
-                `🔥 الضغط الهجومي المستمر يشير لهدف قريب بنسبة ${probability}%` :
-                `🛡️ الدفاع المنظم يحد من الفرص بنسبة ${probability}%`,
+                `🔥 الضغط الهجومي المستمر والفرص الواضحة تشير إلى هدف قريب بنسبة ${probability}%` :
+                `🛡️ الدفاع المنظم وغياب الفرص الواضحة تشير إلى عدم تسجيل هدف بنسبة ${probability}%`,
             timestamp: new Date().toISOString(),
             algorithm: this.algorithmVersion,
-            emoji: isGoal ? '⚽' : '🛡️'
+            emoji: isGoal ? '⚽' : '❌'
         };
 
         return prediction;
@@ -346,6 +347,43 @@ ${prediction.reasoning}
         } catch (error) {
             console.error('خطأ في إرسال الدفع للقناة:', error);
         }
+    }
+}
+
+// 👥 CHANNEL SUBSCRIPTION CHECKER
+class ChannelSubscriptionChecker {
+    constructor(bot, channelId) {
+        this.bot = bot;
+        this.channelId = channelId;
+    }
+
+    async checkUserSubscription(userId) {
+        try {
+            const member = await this.bot.telegram.getChatMember(this.channelId, userId);
+            return member.status === 'member' || member.status === 'administrator' || member.status === 'creator';
+        } catch (error) {
+            console.error('خطأ في التحقق من الاشتراك:', error);
+            return false;
+        }
+    }
+
+    async sendSubscriptionRequiredMessage(ctx) {
+        const message = `
+❌ *يجب الاشتراك في القناة أولاً*
+
+📢 لكي تتمكن من استخدام البوت، يجب أن تكون مشتركاً في قناتنا:
+
+${CONFIG.CHANNEL_LINK}
+
+✅ بعد الاشتراك، اضغط على زر "✅ تحقق من الاشتراك" للمتابعة.
+        `;
+
+        const keyboard = Markup.inlineKeyboard([
+            [Markup.button.url('📢 انضم للقناة', CONFIG.CHANNEL_LINK)],
+            [Markup.button.callback('✅ تحقق من الاشتراك', 'check_subscription')]
+        ]);
+
+        await ctx.replyWithMarkdown(message, keyboard);
     }
 }
 
@@ -551,6 +589,7 @@ const fakeStats = new FakeStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
 const imageValidator = new ImageValidator(CONFIG.AI_APIS.OPENAI);
 const channelManager = new ChannelManager(bot, "@GEMZGOOL");
+const channelChecker = new ChannelSubscriptionChecker(bot, "@GEMZGOOL");
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -574,7 +613,8 @@ bot.use(session({
         hasActivePrediction: false,
         editingPrices: false,
         editingLinks: false,
-        currentEditingType: null
+        currentEditingType: null,
+        checkedSubscription: false
     })
 }));
 
@@ -682,7 +722,7 @@ function addSubscriptionDays(startDate, type) {
     }
 }
 
-// 🎯 BOT COMMANDS - UPDATED WITHOUT CHANNEL CHECK
+// 🎯 BOT COMMANDS - UPDATED WITH CHANNEL CHECK
 
 bot.start(async (ctx) => {
     try {
@@ -695,6 +735,13 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
+        // 🔒 التحقق من اشتراك القناة
+        const isSubscribed = await channelChecker.checkUserSubscription(userId);
+        if (!isSubscribed && userId !== CONFIG.ADMIN_ID) {
+            await channelChecker.sendSubscriptionRequiredMessage(ctx);
+            return;
+        }
+
         // إرسال الصورة أولاً
         try {
             await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
@@ -703,14 +750,14 @@ bot.start(async (ctx) => {
                         `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
                         `📢 *القناة:* ${CONFIG.CHANNEL}\n\n` +
                         `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
-                        `👉 ${CONFIG.CHANNEL}`
+                        `👉 ${CONFIG.CHANNEL_LINK}`
             });
         } catch (photoError) {
             await ctx.replyWithMarkdown(
                 `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                 `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n\n` +
                 `✨ *انضم لقناتنا للحصول على أحدث التوقعات:*\n` +
-                `👉 ${CONFIG.CHANNEL}`
+                `👉 ${CONFIG.CHANNEL_LINK}`
             );
         }
 
@@ -719,6 +766,7 @@ bot.start(async (ctx) => {
         if (existingUser) {
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
+            ctx.session.checkedSubscription = true;
 
             const remainingDays = calculateRemainingDays(existingUser.subscription_end_date);
             
@@ -744,6 +792,7 @@ bot.start(async (ctx) => {
         } else {
             ctx.session.step = 'start';
             ctx.session.userData = { userId, userName };
+            ctx.session.checkedSubscription = true;
 
             const welcomeMessage = `
 🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
@@ -808,7 +857,7 @@ bot.on('callback_query', async (ctx) => {
                 
                 // إرسال رسالة الفوز للقناة
                 await channelManager.sendPredictionMessage(userData, 
-                    { type: '⚽ هدف مؤكد - فوز', emoji: '⚽', probability: 85, confidence: 95, reasoning: 'توقع هدف ناجح' }, 
+                    { type: '⚽ GOAL - هدف', emoji: '⚽', probability: 85, confidence: 95, reasoning: 'توقع هدف ناجح - فوز' }, 
                     ctx.session.currentBet
                 );
                 
@@ -857,13 +906,30 @@ bot.on('callback_query', async (ctx) => {
             await handlePaymentReject(ctx, paymentId);
         }
         
+        // معالجة زر التحقق من الاشتراك
+        else if (callbackData === 'check_subscription') {
+            const isSubscribed = await channelChecker.checkUserSubscription(userId);
+            if (isSubscribed) {
+                ctx.session.checkedSubscription = true;
+                await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
+                await ctx.replyWithMarkdown('🎉 *مرحباً بك! يمكنك الآن استخدام البوت.*\n\nأرسل /start للبدء.');
+                try {
+                    await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+                } catch (deleteError) {
+                    console.log('لا يمكن حذف الرسالة:', deleteError);
+                }
+            } else {
+                await ctx.answerCbQuery('❌ لم تشترك في القناة بعد');
+            }
+        }
+        
     } catch (error) {
         console.error('خطأ في معالجة الاستدعاء:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED WITHOUT CHANNEL CHECK
+// 📝 HANDLE TEXT MESSAGES - UPDATED WITH CHANNEL CHECK
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -875,6 +941,17 @@ bot.on('text', async (ctx) => {
         const text = ctx.message.text;
         const session = ctx.session;
         const userId = ctx.from.id.toString();
+
+        // 🔒 التحقق من اشتراك القناة للمستخدمين العاديين
+        if (!session.checkedSubscription && userId !== CONFIG.ADMIN_ID) {
+            const isSubscribed = await channelChecker.checkUserSubscription(userId);
+            if (!isSubscribed) {
+                await channelChecker.sendSubscriptionRequiredMessage(ctx);
+                return;
+            } else {
+                session.checkedSubscription = true;
+            }
+        }
 
         // 🔐 ADMIN COMMANDS - للإدمن فقط
         if (userId === CONFIG.ADMIN_ID) {
@@ -1118,6 +1195,17 @@ bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
+
+        // 🔒 التحقق من اشتراك القناة للمستخدمين العاديين
+        if (!session.checkedSubscription && userId !== CONFIG.ADMIN_ID) {
+            const isSubscribed = await channelChecker.checkUserSubscription(userId);
+            if (!isSubscribed) {
+                await channelChecker.sendSubscriptionRequiredMessage(ctx);
+                return;
+            } else {
+                session.checkedSubscription = true;
+            }
+        }
 
         // 💳 معالجة صور الدفع
         if (session.paymentType) {
@@ -2499,6 +2587,7 @@ bot.launch().then(() => {
     console.log('🎉 نجاح! AI GOAL Predictor v10.8 يعمل الآن!');
     console.log('👤 المطور:', CONFIG.DEVELOPER);
     console.log('📢 القناة:', CONFIG.CHANNEL);
+    console.log('🔗 رابط القناة:', CONFIG.CHANNEL_LINK);
     console.log('🌐 الفحص الصحي: http://localhost:' + PORT);
     console.log('🔧 آيدي الإدمن:', CONFIG.ADMIN_ID);
 }).catch(console.error);
