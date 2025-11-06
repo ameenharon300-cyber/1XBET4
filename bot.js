@@ -238,62 +238,11 @@ class ImageValidator {
             }
         } catch (error) {
             console.error('خطأ في التحقق من OpenAI:', error);
-            // في حالة الخطأ، نستخدم طريقة بديلة للتحقق
-            return await this.fallbackValidation(imageUrl);
-        }
-    }
-
-    async fallbackValidation(imageUrl) {
-        try {
-            // تحقق أبسط في حالة فشل OpenAI
-            const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                model: "gpt-4o-mini",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            {
-                                type: "text",
-                                text: `هل هذه صورة من لعبة فيديو تظهر واجهة لعبة كرة قدم؟ أجب بنعم أو لا.`
-                            },
-                            {
-                                type: "image_url",
-                                image_url: imageUrl
-                            }
-                        ]
-                    }
-                ],
-                max_tokens: 5,
-                temperature: 0.1
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${this.openaiApiKey}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const answer = response.data.choices[0].message.content.toLowerCase().trim();
-            
-            if (answer.includes('نعم')) {
-                return {
-                    valid: true,
-                    message: '✅ تم تحميل الصورة بنجاح',
-                    confidence: 0.8
-                };
-            } else {
-                return {
-                    valid: false,
-                    message: '❌ هذه ليست صورة اللعبة، أرسل صورة من داخل لعبة GOAL فقط.',
-                    confidence: 0.7
-                };
-            }
-        } catch (fallbackError) {
-            console.error('خطأ في التحقق البديل:', fallbackError);
-            // في حالة فشل كلي، نقبل الصورة لتجنب حظر المستخدمين
+            // في حالة الخطأ، نقبل الصورة لتجنب حظر المستخدمين
             return {
                 valid: true,
                 message: '✅ تم تحميل الصورة بنجاح',
-                confidence: 0.6
+                confidence: 0.7
             };
         }
     }
@@ -402,7 +351,7 @@ ${prediction.reasoning}
     }
 }
 
-// 👥 CHANNEL SUBSCRIPTION CHECKER
+// 👥 CHANNEL SUBSCRIPTION CHECKER - SIMPLIFIED
 class ChannelSubscriptionChecker {
     constructor(bot, channelId) {
         this.bot = bot;
@@ -411,34 +360,47 @@ class ChannelSubscriptionChecker {
 
     async checkUserSubscription(userId) {
         try {
+            // تجاوز التحقق للمستخدمين الحاليين لتجنب المشاكل
+            return true;
+            
+            // الكود الأصلي (محظور حالياً):
+            /*
             const member = await this.bot.telegram.getChatMember(this.channelId, userId);
             return member.status === 'member' || member.status === 'administrator' || member.status === 'creator';
+            */
         } catch (error) {
-            console.error('خطأ في التحقق من الاشتراك:', error);
-            return false;
+            console.error('⚠️ خطأ في التحقق من الاشتراك، تم تجاوزه:', error.message);
+            // في حالة الخطأ، نسمح للمستخدم بالمتابعة
+            return true;
         }
     }
 
     async sendSubscriptionRequiredMessage(ctx) {
         const message = `
-❌ *يجب الاشتراك في القناة أولاً*
+📢 *مرحباً بك في بوت GOAL Predictor* 🤖
 
-📢 لكي تتمكن من استخدام البوت، يجب أن تكون مشتركاً في قناتنا:
+🔔 *تنبيه مهم:* 
+نوصي بالانضمام إلى قناتنا للحصول على آخر التحديثات والنصائح:
 
 ${CONFIG.CHANNEL_LINK}
 
-✅ بعد الاشتراك، اضغط على زر "✅ تحقق من الاشتراك" للمتابعة.
+✅ *بعد الاشتراك، يمكنك استخدام البوت مباشرة*
 
-🔔 *ملاحظة:* بدون الاشتراك لن تتمكن من استخدام أي من ميزات البوت.
+🎯 *مميزات البوت:*
+• تحليل ذكي للصور باستخدام AI
+• توقعات دقيقة للأهداف
+• نظام اشتراكات متكامل
+• إحصائيات مفصلة
+
+🚀 *ابدأ الآن بإرسال /start*
         `;
 
-        const keyboard = Markup.inlineKeyboard([
-            [Markup.button.url('📢 انضم للقناة', CONFIG.CHANNEL_LINK)],
-            [Markup.button.callback('✅ تحقق من الاشتراك', 'check_subscription')],
-            [Markup.button.callback('🔄 إعادة المحاولة', 'check_subscription')]
-        ]);
-
-        await ctx.replyWithMarkdown(message, keyboard);
+        await ctx.replyWithMarkdown(message);
+        
+        // بعد الرسالة، ننتقل مباشرة إلى البوت
+        setTimeout(async () => {
+            await ctx.replyWithMarkdown('🎉 *يمكنك الآن استخدام البوت!*\n\nأرسل /start للبدء.');
+        }, 2000);
     }
 }
 
@@ -668,8 +630,7 @@ bot.use(session({
         hasActivePrediction: false,
         editingPrices: false,
         editingLinks: false,
-        currentEditingType: null,
-        checkedSubscription: false
+        currentEditingType: null
     })
 }));
 
@@ -777,7 +738,7 @@ function addSubscriptionDays(startDate, type) {
     }
 }
 
-// 🎯 BOT COMMANDS - UPDATED WITH CHANNEL CHECK
+// 🎯 BOT COMMANDS - UPDATED WITHOUT CHANNEL CHECK
 
 bot.start(async (ctx) => {
     try {
@@ -790,28 +751,22 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // 🔒 التحقق من اشتراك القناة - إجباري للجميع
-        const isSubscribed = await channelChecker.checkUserSubscription(userId);
-        if (!isSubscribed && userId !== CONFIG.ADMIN_ID) {
-            await channelChecker.sendSubscriptionRequiredMessage(ctx);
-            return;
-        }
-
-        // إرسال الصورة أولاً
+        // إرسال رسالة ترحيب مع رابط القناة (بدون تحقق إجباري)
         try {
             await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
                 caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                         `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n` +
-                        `💎 *المطور:* ${CONFIG.DEVELOPER}\n` +
-                        `📢 *القناة:* ${CONFIG.CHANNEL}\n` +
-                        `🔗 ${CONFIG.CHANNEL_LINK}\n\n` +
-                        `✨ *تم التحقق من اشتراكك في القناة بنجاح* ✅`
+                        `💎 *المطور:* ${CONFIG.DEVELOPER}\n\n` +
+                        `📢 *انضم لقناتنا للحصول على آخر التحديثات:*\n` +
+                        `${CONFIG.CHANNEL_LINK}\n\n` +
+                        `🎯 *يمكنك البدء في استخدام البوت مباشرة*`
             });
         } catch (photoError) {
             await ctx.replyWithMarkdown(
                 `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
                 `🤖 *أقوى نظام لتوقع الأهداف بالذكاء الاصطناعي*\n\n` +
-                `✨ *تم التحقق من اشتراكك في القناة بنجاح* ✅`
+                `📢 *انضم لقناتنا:* ${CONFIG.CHANNEL_LINK}\n\n` +
+                `🎯 *يمكنك البدء في استخدام البوت مباشرة*`
             );
         }
 
@@ -820,7 +775,6 @@ bot.start(async (ctx) => {
         if (existingUser) {
             ctx.session.step = 'verified';
             ctx.session.userData = existingUser;
-            ctx.session.checkedSubscription = true;
 
             const remainingDays = calculateRemainingDays(existingUser.subscription_end_date);
             
@@ -846,7 +800,6 @@ bot.start(async (ctx) => {
         } else {
             ctx.session.step = 'start';
             ctx.session.userData = { userId, userName };
-            ctx.session.checkedSubscription = true;
 
             const welcomeMessage = `
 🔐 *مرحباً ${userName} في نظام GOAL Predictor Pro v${CONFIG.VERSION}*
@@ -861,7 +814,7 @@ bot.start(async (ctx) => {
 4️⃣ ابدأ باستخدام المحاولات المجانية
 
 💎 *المطور:* ${CONFIG.DEVELOPER}
-📢 *القناة:* ${CONFIG.CHANNEL}
+📢 *القناة:* ${CONFIG.CHANNEL_LINK}
 
 🔢 *الآن اضغط على "🔐 إدخال رقم الحساب" لبدء التسجيل*
             `;
@@ -960,31 +913,13 @@ bot.on('callback_query', async (ctx) => {
             await handlePaymentReject(ctx, paymentId);
         }
         
-        // معالجة زر التحقق من الاشتراك
-        else if (callbackData === 'check_subscription') {
-            const isSubscribed = await channelChecker.checkUserSubscription(userId);
-            if (isSubscribed) {
-                ctx.session.checkedSubscription = true;
-                await ctx.answerCbQuery('✅ تم التحقق من الاشتراك بنجاح!');
-                await ctx.replyWithMarkdown('🎉 *مرحباً بك! يمكنك الآن استخدام البوت.*\n\nأرسل /start للبدء.');
-                try {
-                    await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
-                } catch (deleteError) {
-                    console.log('لا يمكن حذف الرسالة:', deleteError);
-                }
-            } else {
-                await ctx.answerCbQuery('❌ لم تشترك في القناة بعد');
-                await channelChecker.sendSubscriptionRequiredMessage(ctx);
-            }
-        }
-        
     } catch (error) {
         console.error('خطأ في معالجة الاستدعاء:', error);
         await ctx.answerCbQuery('❌ حدث خطأ في المعالجة');
     }
 });
 
-// 📝 HANDLE TEXT MESSAGES - UPDATED WITH CHANNEL CHECK
+// 📝 HANDLE TEXT MESSAGES - UPDATED WITHOUT CHANNEL CHECK
 bot.on('text', async (ctx) => {
     try {
         const settings = await dbManager.getSettings();
@@ -996,17 +931,6 @@ bot.on('text', async (ctx) => {
         const text = ctx.message.text;
         const session = ctx.session;
         const userId = ctx.from.id.toString();
-
-        // 🔒 التحقق من اشتراك القناة للمستخدمين العاديين
-        if (!session.checkedSubscription && userId !== CONFIG.ADMIN_ID) {
-            const isSubscribed = await channelChecker.checkUserSubscription(userId);
-            if (!isSubscribed) {
-                await channelChecker.sendSubscriptionRequiredMessage(ctx);
-                return;
-            } else {
-                session.checkedSubscription = true;
-            }
-        }
 
         // 🔐 ADMIN COMMANDS - للإدمن فقط
         if (userId === CONFIG.ADMIN_ID) {
@@ -1250,17 +1174,6 @@ bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
         const session = ctx.session;
-
-        // 🔒 التحقق من اشتراك القناة للمستخدمين العاديين
-        if (!session.checkedSubscription && userId !== CONFIG.ADMIN_ID) {
-            const isSubscribed = await channelChecker.checkUserSubscription(userId);
-            if (!isSubscribed) {
-                await channelChecker.sendSubscriptionRequiredMessage(ctx);
-                return;
-            } else {
-                session.checkedSubscription = true;
-            }
-        }
 
         // 💳 معالجة صور الدفع
         if (session.paymentType) {
