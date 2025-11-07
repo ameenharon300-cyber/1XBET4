@@ -1,10 +1,10 @@
 # 🔐 TELEGRAM BOT CONFIG
-BOT_TOKEN=8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU
-ADMIN_ID=6565594143
+BOT_TOKEN=your_telegram_bot_token_here
+ADMIN_ID=your_admin_user_id_here
 
 # 🧠 AI API KEYS
-GEMINI_API_KEY=AIzaSyC1mL-wjNppCj0vcFI6dRjVju2jX2EvpyI
-OPENAI_API_KEY=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
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 
 # 🔥 FIREBASE CONFIG
 FIREBASE_PROJECT_ID=your_firebase_project_id
