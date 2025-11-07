@@ -1,18 +1,18 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 13.1
-// 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
-// 🔥 FEATURES: FIXED SESSIONS + RESPONSIVE MESSAGES
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 14.0
+// 👤 DEVELOPER: AMIN-HARON - @GEMZGOOLBOT
+// 🔥 FEATURES: FULL FUNCTIONALITY + FIXED SESSIONS
 // ===================================================
 
-console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v13.1...');
+console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v14.0...');
 console.log('🕒 ' + new Date().toISOString());
 
-// 🔧 CONFIGURATION - FIXED FOR RENDER
+// 🔧 CONFIGURATION
 const CONFIG = {
     BOT_TOKEN: process.env.BOT_TOKEN,
     ADMIN_ID: process.env.ADMIN_ID,
     
-    // 🧠 AI APIS (OPTIONAL)
+    // 🧠 AI APIS
     AI_APIS: {
         GEMINI: process.env.GEMINI_API_KEY || "",
         OPENAI: process.env.OPENAI_API_KEY || ""
@@ -26,7 +26,7 @@ const CONFIG = {
         year: 250
     },
 
-    // 🔐 DEFAULT PAYMENT LINKS (OPTIONAL)
+    // 🔐 DEFAULT PAYMENT LINKS
     PAYMENT_LINKS: {
         week: process.env.PAYMENT_WEEK || "https://payment.example.com/week",
         month: process.env.PAYMENT_MONTH || "https://payment.example.com/month",
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://payment.example.com/year"
     },
     
-    VERSION: "13.1.0",
+    VERSION: "14.0.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     CHANNEL_LINK: "https://t.me/+LP3ZTdajIeE2YjI0",
@@ -50,9 +50,8 @@ const { Telegraf, Markup, session } = require('telegraf');
 const axios = require('axios');
 const express = require('express');
 
-// ✅ FIX: تأكد من أن التوكن صحيح
 if (!CONFIG.BOT_TOKEN || CONFIG.BOT_TOKEN === "YOUR_BOT_TOKEN_HERE") {
-    console.error('❌ خطأ: BOT_TOKEN غير مضبوط بشكل صحيح في Environment Variables');
+    console.error('❌ خطأ: BOT_TOKEN غير مضبوط');
     process.exit(1);
 }
 
@@ -86,7 +85,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌐 خادم الفحص الصحي يعمل على المنفذ ${PORT}`);
 });
 
-// 🗄️ SIMPLE DATABASE (NO FIREBASE - FIXED FOR RENDER)
+// 🗄️ SIMPLE DATABASE
 class SimpleDatabase {
     constructor() {
         this.users = new Map();
@@ -95,7 +94,6 @@ class SimpleDatabase {
         this.imageAnalyses = new Map();
         this.predictions = new Map();
         
-        // Initialize default settings
         this.settings.set('config', {
             prices: { ...CONFIG.SUBSCRIPTION_PRICES },
             payment_links: { ...CONFIG.PAYMENT_LINKS },
@@ -166,7 +164,6 @@ class SimpleDatabase {
     async searchUsers(query) {
         const users = await this.getAllUsers();
         const lowerQuery = query.toLowerCase();
-        
         return users.filter(user => 
             (user.user_id && user.user_id.toString().includes(query)) ||
             (user.username && user.username.toLowerCase().includes(lowerQuery)) ||
@@ -215,7 +212,6 @@ class Statistics {
             this.totalImageAnalyses = analyses.length;
             this.totalPredictions = predictions.length;
         } catch (error) {
-            // استخدام إحصائيات افتراضية في حالة الخطأ
             this.totalUsers = Math.floor(Math.random() * 100) + 50;
             this.activeUsers = Math.floor(Math.random() * 30) + 20;
             this.totalImageAnalyses = Math.floor(Math.random() * 200) + 100;
@@ -386,7 +382,7 @@ class SmartImageRecognizer {
                     `• غياب الفرص الواضحة\n` +
                     `• تقل فرص التسجيل بنسبة ${probability}%`,
                 timestamp: new Date().toISOString(),
-                algorithm: "13.1_advanced",
+                algorithm: "14.0_advanced",
                 emoji: isGoal ? '⚽' : '❌'
             };
 
@@ -410,7 +406,7 @@ class SmartImageRecognizer {
                 `🎯 *التحليل الفني:*\nالوضع الهجومي يشير إلى إمكانية تسجيل هدف بنسبة ${probability}%` :
                 `🛡️ *التحليل الفني:*\nالدفاع المنظم يقلل فرص التسجيل بنسبة ${probability}%`,
             timestamp: new Date().toISOString(),
-            algorithm: "13.1_fallback",
+            algorithm: "14.0_fallback",
             emoji: isGoal ? '⚽' : '❌'
         };
     }
@@ -421,7 +417,7 @@ const dbManager = new SimpleDatabase();
 const stats = new Statistics();
 const imageRecognizer = new SmartImageRecognizer();
 
-// ✅ FIX: تحسين نظام الجلسات
+// 🎯 BOT SETUP - IMPROVED SESSIONS
 const getDefaultSession = () => ({
     step: 'start',
     userData: {},
@@ -446,7 +442,6 @@ const getDefaultSession = () => ({
     broadcastImage: null
 });
 
-// 🎯 BOT SETUP - IMPROVED SESSIONS
 bot.use(session({
     defaultSession: getDefaultSession
 }));
@@ -472,6 +467,15 @@ const getSubscriptionKeyboard = () => {
         ['💰 أسبوعي', '💰 شهري'],
         ['💰 3 أشهر', '💰 سنوي'],
         ['🔙 الرجوع للقائمة']
+    ]).resize();
+};
+
+const getAdminMainKeyboard = () => {
+    return Markup.keyboard([
+        ['📊 إحصائيات النظام', '👥 إدارة المستخدمين'],
+        ['💰 طلبات الدفع', '⚙️ الإعدادات'],
+        ['📢 إرسال إشعار', '🔍 بحث عن مستخدم'],
+        ['🔧 قفل/فتح البوت', '🔙 الخروج من الإدمن']
     ]).resize();
 };
 
@@ -527,14 +531,12 @@ bot.start(async (ctx) => {
         const userId = ctx.from.id.toString();
         const userName = ctx.from.first_name;
 
-        // ✅ FIX: تهيئة الجلسة بشكل صحيح
         if (!ctx.session.userData || !ctx.session.userData.userId) {
             ctx.session = getDefaultSession();
             ctx.session.userData.userId = userId;
             ctx.session.userData.userName = userName;
         }
 
-        // إرسال رسالة ترحيب
         try {
             await ctx.replyWithPhoto(CONFIG.START_IMAGE, {
                 caption: `🎉 *مرحباً بك في نظام GOAL Predictor Pro v${CONFIG.VERSION}* 🚀\n\n` +
@@ -622,6 +624,255 @@ bot.start(async (ctx) => {
     }
 });
 
+// ✅ FIX: جميع معالجات الأزرار النصية
+const buttonHandlers = {
+    // 🔐 إدخال رقم الحساب
+    '🔐 إدخال رقم الحساب': async (ctx) => {
+        const session = ctx.session;
+        if (!session.userData.onexbet || session.userData.onexbet === "") {
+            await ctx.replyWithMarkdown(
+                '🔐 *إدخال رقم حساب 1xBet*\n\n' +
+                '🔢 يرجى إرسال رقم حساب 1xBet المكون من 10 أرقام:'
+            );
+            session.step = 'entering_account';
+        } else {
+            await ctx.replyWithMarkdown(
+                `✅ *لديك حساب مسجل بالفعل*\n\n` +
+                `🔐 الحساب: \`${session.userData.onexbet}\`\n\n` +
+                `🔄 إذا كنت تريد تغيير الحساب، اتصل بالدعم الفني`
+            );
+        }
+    },
+
+    // 🎯 التوقع التالي
+    '🎯 التوقع التالي': async (ctx) => {
+        const session = ctx.session;
+        const userData = await dbManager.getUser(ctx.from.id.toString());
+        
+        if (!userData || !userData.onexbet) {
+            await ctx.replyWithMarkdown('❌ *يجب التحقق من الحساب أولاً*', getLoginKeyboard());
+            return;
+        }
+
+        if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
+            await ctx.replyWithMarkdown(
+                '🚫 *انتهت المحاولات المجانية*\n\n' +
+                '💳 يرجى الاشتراك للمتابعة',
+                getMainKeyboard()
+            );
+            return;
+        }
+
+        await ctx.replyWithMarkdown(
+            `🎯 *التوقع التالي*\n\n` +
+            `💰 *مبلغ الرهان:* ${session.currentBet}$\n` +
+            `📊 *الإحصائيات:*\n` +
+            `• المحاولات المجانية: ${userData.free_attempts}\n` +
+            `• إجمالي التوقعات: ${userData.total_predictions || 0}\n\n` +
+            `📸 *الآن أرسل صورة من لعبة GOAL في 1xBet للتحليل*\n\n` +
+            `🎮 *تأكد من أن الصورة تحتوي على:*\n` +
+            `• لاعبين (ميسي، رونالدو، نيمار)\n` +
+            `• كلمة GOAL أو هدف\n` +
+            `• كلمة لا هدف\n` +
+            `• زر وضع الرهان\n` +
+            `• الأرقام الظاهرة في اللعبة`
+        );
+    },
+
+    // 📸 إرسال صورة
+    '📸 إرسال صورة': async (ctx) => {
+        const userData = await dbManager.getUser(ctx.from.id.toString());
+        
+        if (!userData || !userData.onexbet) {
+            await ctx.replyWithMarkdown('❌ *يجب التحقق من الحساب أولاً*', getLoginKeyboard());
+            return;
+        }
+
+        await ctx.replyWithMarkdown(
+            `📸 *إرسال صورة للتحليل*\n\n` +
+            `🎮 *أرسل صورة من لعبة GOAL في 1xBet يجب أن تحتوي على:*\n\n` +
+            `👥 *اللاعبين:*\n` +
+            `• ميسي و رونالدو\n` +
+            `• أو ميسي و نيمار\n` +
+            `• أو رونالدو و نيمار\n\n` +
+            `📝 *النصوص:*\n` +
+            `• GOAL أو هدف\n` +
+            `• لا هدف\n` +
+            `• وضع الرهان أو اختر نتيجة\n\n` +
+            `🔢 *الأرقام:*\n` +
+            `• 5, 2, 1, 100, 50, 10, 0.1\n\n` +
+            `⚠️ *سيتم رفض أي صورة لا تحتوي على هذه العناصر*`
+        );
+    },
+
+    // 📊 إحصائياتي
+    '📊 إحصائياتي': async (ctx) => {
+        const userData = await dbManager.getUser(ctx.from.id.toString());
+        
+        if (!userData) {
+            await ctx.replyWithMarkdown('❌ *لم يتم العثور على بياناتك*', getMainKeyboard());
+            return;
+        }
+
+        const statsMessage = `
+📊 *إحصائياتك الشخصية*
+
+👤 *الحساب:* \`${userData.onexbet}\`
+🎯 *إجمالي التوقعات:* ${userData.total_predictions || 0}
+💰 *إجمالي الرهانات:* ${userData.total_bets || 0}$
+📈 *الحالة:* ${userData.subscription_status === 'active' ? '✅ نشط' : '🆓 مجاني'}
+
+${userData.subscription_status === 'active' ? 
+    `📅 *ينتهي في:* ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}` : 
+    `🆓 *المحاولات المتبقية:* ${userData.free_attempts}`}
+        `;
+
+        await ctx.replyWithMarkdown(statsMessage, getMainKeyboard());
+    },
+
+    // 👥 إحصائيات البوت
+    '👥 إحصائيات البوت': async (ctx) => {
+        await stats.updateStats(dbManager);
+        const botStats = stats.getStats();
+
+        const statsMessage = `
+📈 *إحصائيات البوت*
+
+👥 *إجمالي المستخدمين:* ${botStats.totalUsers}
+✅ *المستخدمين النشطين:* ${botStats.activeUsers}
+🎯 *إجمالي التوقعات:* ${botStats.totalPredictions}
+🖼️ *تحليلات الصور:* ${botStats.totalImageAnalyses}
+🆓 *المستخدمين المجانين:* ${botStats.totalUsers - botStats.activeUsers}
+
+🤖 *الإصدار:* ${CONFIG.VERSION}
+🔧 *المطور:* ${CONFIG.DEVELOPER}
+        `;
+
+        await ctx.replyWithMarkdown(statsMessage, getMainKeyboard());
+    },
+
+    // 👤 حالة الاشتراك
+    '👤 حالة الاشتراك': async (ctx) => {
+        const userData = await dbManager.getUser(ctx.from.id.toString());
+        
+        if (!userData) {
+            await ctx.replyWithMarkdown('❌ *لم يتم العثور على بياناتك*', getMainKeyboard());
+            return;
+        }
+
+        const remainingDays = calculateRemainingDays(userData.subscription_end_date);
+        
+        let statusMessage = '';
+        if (userData.subscription_status === 'active' && remainingDays > 0) {
+            statusMessage = `✅ *اشتراكك نشط*\n\n` +
+                           `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                           `📦 النوع: ${userData.subscription_type}\n` +
+                           `📅 الانتهاء: ${new Date(userData.subscription_end_date).toLocaleDateString('ar-EG')}\n` +
+                           `⏳ متبقي: ${remainingDays} يوم`;
+        } else if (userData.free_attempts > 0) {
+            statusMessage = `🎯 *محاولات مجانية متاحة*\n\n` +
+                           `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                           `🆓 محاولات مجانية: ${userData.free_attempts}`;
+        } else {
+            statusMessage = `🚫 *انتهت المحاولات*\n\n` +
+                           `🔐 الحساب: \`${userData.onexbet}\`\n` +
+                           `💳 يرجى الاشتراك للمتابعة`;
+        }
+
+        await ctx.replyWithMarkdown(statusMessage, getMainKeyboard());
+    },
+
+    // 💳 الاشتراكات
+    '💳 الاشتراكات': async (ctx) => {
+        const settings = await dbManager.getSettings();
+        
+        const subscriptionMessage = `
+💎 *باقات الاشتراك المتاحة*
+
+💰 *أسبوعي:* ${settings.prices.week}$ 
+⏰ مدة 7 أيام
+
+💰 *شهري:* ${settings.prices.month}$ 
+⏰ مدة 30 يوماً
+
+💰 *3 أشهر:* ${settings.prices.three_months}$ 
+⏰ مدة 90 يوماً
+
+💰 *سنوي:* ${settings.prices.year}$ 
+⏰ مدة 365 يوماً
+
+🎯 *المزايا:*
+• توقعات غير محدودة
+• تحليل متقدم بالذكاء الاصطناعي
+• دعم فني متميز
+• تحديثات مستمرة
+
+📞 *للاشتراك اختر الباقة المناسبة:*
+        `;
+
+        await ctx.replyWithMarkdown(subscriptionMessage, getSubscriptionKeyboard());
+    },
+
+    // 🆘 الدعم الفني
+    '🆘 الدعم الفني': async (ctx) => {
+        await ctx.replyWithMarkdown(
+            '🆘 *الدعم الفني*\n\n' +
+            '📞 للاستفسارات والدعم الفني:\n' +
+            `👤 ${CONFIG.DEVELOPER}\n` +
+            `📢 ${CONFIG.CHANNEL}\n\n` +
+            '⏰ نم الرد خلال 24 ساعة'
+        );
+    },
+
+    // 🔙 الرجوع للقائمة
+    '🔙 الرجوع للقائمة': async (ctx) => {
+        await ctx.replyWithMarkdown('🏠 *العودة إلى القائمة الرئيسية*', getMainKeyboard());
+    }
+};
+
+// ✅ تسجيل جميع معالجات الأزرار
+Object.keys(buttonHandlers).forEach(button => {
+    bot.hears(button, buttonHandlers[button]);
+});
+
+// ✅ معالجة أنواع الاشتراكات
+const subscriptionHandlers = {
+    '💰 أسبوعي': 'week',
+    '💰 شهري': 'month', 
+    '💰 3 أشهر': 'three_months',
+    '💰 سنوي': 'year'
+};
+
+for (const [button, type] of Object.entries(subscriptionHandlers)) {
+    bot.hears(button, async (ctx) => {
+        try {
+            const settings = await dbManager.getSettings();
+            const price = settings.prices[type];
+            const paymentLink = settings.payment_links[type];
+            
+            ctx.session.paymentType = type;
+            ctx.session.awaitingPaymentAccount = true;
+
+            await ctx.replyWithMarkdown(
+                `💳 *طلب اشتراك ${button.replace('💰 ', '')}*\n\n` +
+                `💰 *المبلغ:* ${price}$\n` +
+                `📦 *المدة:* ${type === 'week' ? '7 أيام' : type === 'month' ? '30 يوماً' : type === 'three_months' ? '90 يوماً' : '365 يوماً'}\n\n` +
+                `🔗 *رابط الدفع:* [اضغط هنا](${paymentLink})\n\n` +
+                `📋 *خطوات الإكمال:*\n` +
+                `1. قم بالدفع عبر الرابط أعلاه\n` +
+                `2. احفظ صورة إثبات الدفع\n` +
+                `3. أرسل رقم حساب 1xBet الخاص بك\n` +
+                `4. أرسل صورة إثبات الدفع\n\n` +
+                `🔢 *الآن أرسل رقم حساب 1xBet (10 أرقام):*`
+            );
+
+        } catch (error) {
+            console.error('خطأ في معالجة الاشتراك:', error);
+            await ctx.replyWithMarkdown('❌ حدث خطأ في النظام');
+        }
+    });
+}
+
 // ✅ FIX: معالج النصوص المحسّن
 bot.on('text', async (ctx) => {
     try {
@@ -631,44 +882,10 @@ bot.on('text', async (ctx) => {
 
         console.log(`📝 رسالة نصية من ${userId}: ${message}`);
 
-        // ✅ FIX: تأكد من وجود الجلسة
         if (!session.userData) {
             ctx.session = getDefaultSession();
             ctx.session.userData.userId = userId;
             ctx.session.userData.userName = ctx.from.first_name;
-        }
-
-        // معالجة الأزرار النصية
-        switch (message) {
-            case '🔙 الرجوع للقائمة':
-                await ctx.replyWithMarkdown('🏠 *العودة إلى القائمة الرئيسية*', getMainKeyboard());
-                return;
-                
-            case '🆘 الدعم الفني':
-                await ctx.replyWithMarkdown(
-                    '🆘 *الدعم الفني*\n\n' +
-                    '📞 للاستفسارات والدعم الفني:\n' +
-                    `👤 ${CONFIG.DEVELOPER}\n` +
-                    `📢 ${CONFIG.CHANNEL}\n\n` +
-                    '⏰ نم الرد خلال 24 ساعة'
-                );
-                return;
-                
-            case '🔐 إدخال رقم الحساب':
-                if (!session.userData.onexbet || session.userData.onexbet === "") {
-                    await ctx.replyWithMarkdown(
-                        '🔐 *إدخال رقم حساب 1xBet*\n\n' +
-                        '🔢 يرجى إرسال رقم حساب 1xBet المكون من 10 أرقام:'
-                    );
-                    session.step = 'entering_account';
-                } else {
-                    await ctx.replyWithMarkdown(
-                        `✅ *لديك حساب مسجل بالفعل*\n\n` +
-                        `🔐 الحساب: \`${session.userData.onexbet}\`\n\n` +
-                        `🔄 إذا كنت تريد تغيير الحساب، اتصل بالدعم الفني`
-                    );
-                }
-                return;
         }
 
         // ✅ FIX: معالجة إدخال رقم الحساب للدفع
@@ -743,16 +960,14 @@ bot.on('text', async (ctx) => {
             return;
         }
 
-        // إذا وصلنا هنا ولم يتم معالجة الرسالة، نرسل رسالة مساعدة
-        await ctx.replyWithMarkdown(
-            '🤔 *لم أفهم طلبك*\n\n' +
-            '📋 *الخيارات المتاحة:*\n' +
-            '• 🔐 إدخال رقم الحساب\n' +
-            '• 🎯 التوقع التالي\n' +
-            '• 💳 الاشتراكات\n' +
-            '• 🆘 الدعم الفني',
-            getMainKeyboard()
-        );
+        // إذا لم تكن الرسالة زر معروف، نرسل رسالة المساعدة
+        if (!Object.keys(buttonHandlers).includes(message)) {
+            await ctx.replyWithMarkdown(
+                '🤔 *لم أفهم طلبك*\n\n' +
+                '📋 *استخدم الأزرار المتاحة في القائمة أدناه:*',
+                getMainKeyboard()
+            );
+        }
 
     } catch (error) {
         console.error('❌ خطأ في معالجة النص:', error);
@@ -803,7 +1018,6 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        // 🔐 التحقق من المحاولات المجانية أو الاشتراك
         if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
             await ctx.replyWithMarkdown(
                 '🚫 *انتهت المحاولات المجانية*\n\n' +
@@ -813,12 +1027,10 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        // 📸 معالجة الصورة
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
         const fileLink = await ctx.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        // 🔍 التعرف الذكي على الصورة
         const validationMsg = await ctx.reply('🔍 جاري التعرف على الصورة والتحقق من أنها لعبة GOAL من 1xBet...');
         const recognitionResult = await imageRecognizer.validateGameImage(imageUrl);
         
@@ -836,10 +1048,8 @@ bot.on('photo', async (ctx) => {
         const processingMsg = await ctx.reply('🔄 جاري التحليل المتقدم للصورة...');
 
         try {
-            // استخدام التحليل المتقدم
             const prediction = await imageRecognizer.analyzeGameImage(imageUrl);
             
-            // 📊 تحديث إحصائيات المستخدم
             if (userData.subscription_status !== 'active') {
                 userData.free_attempts--;
             }
@@ -848,7 +1058,6 @@ bot.on('photo', async (ctx) => {
             userData.lastPrediction = prediction;
             await dbManager.saveUser(userId, userData);
 
-            // حفظ تحليل الصورة
             await dbManager.addImageAnalysis({
                 imageUrl: imageUrl,
                 userId: userId,
@@ -857,7 +1066,6 @@ bot.on('photo', async (ctx) => {
                 isValid: true
             });
 
-            // حفظ التوقع
             await dbManager.addPrediction({
                 imageUrl: imageUrl,
                 prediction: prediction,
@@ -865,7 +1073,6 @@ bot.on('photo', async (ctx) => {
                 timestamp: new Date().toISOString()
             });
 
-            // تعيين وجود توقع نشط
             ctx.session.hasActivePrediction = true;
 
             const analysisMessage = `
@@ -891,7 +1098,6 @@ ${userData.subscription_status !== 'active' ?
 
             await ctx.replyWithMarkdown(analysisMessage);
             
-            // إضافة أزرار النتيجة
             const resultKeyboard = Markup.inlineKeyboard([
                 [
                     Markup.button.callback(`🎊 فوز - ربح ${session.currentBet * 2}$`, `win_${Date.now()}`),
@@ -927,52 +1133,73 @@ ${userData.subscription_status !== 'active' ?
     }
 });
 
-// 📱 معالجة الأزرار الرئيسية (نفس الكود السابق)
-bot.hears('🎯 التوقع التالي', async (ctx) => {
+// 🎯 معالجة الأزرار
+bot.action(/win_(.+)/, async (ctx) => {
     try {
+        const userId = ctx.from.id.toString();
         const session = ctx.session;
-        const userData = await dbManager.getUser(ctx.from.id.toString());
         
-        if (!userData || !userData.onexbet) {
-            await ctx.replyWithMarkdown('❌ *يجب التحقق من الحساب أولاً*', getLoginKeyboard());
-            return;
-        }
-
-        if (userData.subscription_status !== 'active' && userData.free_attempts <= 0) {
-            await ctx.replyWithMarkdown(
-                '🚫 *انتهت المحاولات المجانية*\n\n' +
-                '💳 يرجى الاشتراك للمتابعة',
-                getMainKeyboard()
+        if (session.hasActivePrediction) {
+            session.totalProfit += session.currentBet * 2;
+            session.currentBet = session.originalBet;
+            session.hasActivePrediction = false;
+            
+            await ctx.editMessageText(
+                `🎉 *مبروك! لقد ربحت ${session.currentBet * 2}$* 💰\n\n` +
+                `💰 *إجمالي الأرباح:* ${session.totalProfit}$\n` +
+                `🎯 *استمر في اللعب للحصول على المزيد*`,
+                { parse_mode: 'Markdown' }
             );
-            return;
         }
-
-        await ctx.replyWithMarkdown(
-            `🎯 *التوقع التالي*\n\n` +
-            `💰 *مبلغ الرهان:* ${session.currentBet}$\n` +
-            `📊 *الإحصائيات:*\n` +
-            `• المحاولات المجانية: ${userData.free_attempts}\n` +
-            `• إجمالي التوقعات: ${userData.total_predictions || 0}\n\n` +
-            `📸 *الآن أرسل صورة من لعبة GOAL في 1xBet للتحليل*\n\n` +
-            `🎮 *تأكد من أن الصورة تحتوي على:*\n` +
-            `• لاعبين (ميسي، رونالدو، نيمار)\n` +
-            `• كلمة GOAL أو هدف\n` +
-            `• كلمة لا هدف\n` +
-            `• زر وضع الرهان\n` +
-            `• الأرقام الظاهرة في اللعبة`
-        );
-
     } catch (error) {
-        console.error('خطأ في التوقع التالي:', error);
-        await ctx.replyWithMarkdown('❌ حدث خطأ في النظام');
+        console.error('خطأ في معالجة الفوز:', error);
     }
 });
 
-// ... (بقية الدوال تبقى كما هي بدون تغيير)
+bot.action(/lose_(.+)/, async (ctx) => {
+    try {
+        const session = ctx.session;
+        
+        if (session.hasActivePrediction) {
+            session.currentBet *= 2;
+            session.hasActivePrediction = false;
+            
+            await ctx.editMessageText(
+                `🔄 *خسارة هذه المرة*\n\n` +
+                `💰 *مضاعفة الرهان إلى:* ${session.currentBet}$\n` +
+                `🎯 *جرب التوقع التالي للتعويض*`,
+                { parse_mode: 'Markdown' }
+            );
+        }
+    } catch (error) {
+        console.error('خطأ في معالجة الخسارة:', error);
+    }
+});
+
+// 👑 نظام الإدارة
+bot.hears('/admin', async (ctx) => {
+    try {
+        if (ctx.from.id.toString() !== CONFIG.ADMIN_ID) {
+            await ctx.replyWithMarkdown('❌ *غير مصرح بالدخول*');
+            return;
+        }
+
+        ctx.session.adminMode = true;
+        await ctx.replyWithMarkdown(
+            '👑 *وحة إدارة البوت*\n\n' +
+            'مرحباً بك في لوحة التحكم\n' +
+            'اختر الإجراء المطلوب:',
+            getAdminMainKeyboard()
+        );
+
+    } catch (error) {
+        console.error('خطأ في دخول الإدارة:', error);
+    }
+});
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 نجاح! AI GOAL Predictor v13.1 يعمل الآن!');
+    console.log('🎉 نجاح! AI GOAL Predictor v14.0 يعمل الآن!');
     console.log('👤 المطور:', CONFIG.DEVELOPER);
     console.log('📢 القناة:', CONFIG.CHANNEL);
     console.log('🔗 رابط القناة:', CONFIG.CHANNEL_LINK);
