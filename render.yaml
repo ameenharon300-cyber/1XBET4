@@ -1,32 +1,90 @@
 services:
   - type: web
-    name: goal-predictor-bot
+    name: ai-goal-predictor-bot
     env: node
     plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: BOT_TOKEN
-        value: YOUR_BOT_TOKEN_HERE
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: BOT_TOKEN
       - key: ADMIN_ID
-        value: YOUR_ADMIN_ID_HERE
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: ADMIN_ID
       - key: OPENAI_API_KEY
-        value: YOUR_OPENAI_API_KEY_HERE
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: OPENAI_API_KEY
       - key: GEMINI_API_KEY
-        value: YOUR_GEMINI_API_KEY_HERE
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: GEMINI_API_KEY
       - key: IMGBB_API_KEY
-        value: YOUR_IMGBB_API_KEY_HERE
-      - key: FIREBASE_PRIVATE_KEY_ID
-        value: YOUR_FIREBASE_PRIVATE_KEY_ID
-      - key: FIREBASE_PRIVATE_KEY
-        value: YOUR_FIREBASE_PRIVATE_KEY
-      - key: FIREBASE_CLIENT_EMAIL
-        value: YOUR_FIREBASE_CLIENT_EMAIL
-      - key: FIREBASE_CLIENT_ID
-        value: YOUR_FIREBASE_CLIENT_ID
-      - key: FIREBASE_CERT_URL
-        value: YOUR_FIREBASE_CERT_URL
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: IMGBB_API_KEY
       - key: FIREBASE_PROJECT_ID
-        value: YOUR_FIREBASE_PROJECT_ID
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_PROJECT_ID
+      - key: FIREBASE_PRIVATE_KEY_ID
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_PRIVATE_KEY_ID
+      - key: FIREBASE_PRIVATE_KEY
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_PRIVATE_KEY
+      - key: FIREBASE_CLIENT_EMAIL
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_CLIENT_EMAIL
+      - key: FIREBASE_CLIENT_ID
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_CLIENT_ID
+      - key: FIREBASE_CERT_URL
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_CERT_URL
       - key: FIREBASE_DATABASE_URL
-        value: YOUR_FIREBASE_DATABASE_URL
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: FIREBASE_DATABASE_URL
+      - key: PAYMENT_WEEK
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: PAYMENT_WEEK
+      - key: PAYMENT_MONTH
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: PAYMENT_MONTH
+      - key: PAYMENT_3MONTHS
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: PAYMENT_3MONTHS
+      - key: PAYMENT_YEAR
+        fromService:
+          type: web
+          name: ai-goal-predictor-bot
+          envVarKey: PAYMENT_YEAR
