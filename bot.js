@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.3
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.4
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: ULTRA STRICT OCR VALIDATION + EXACT MATCH
 // ===================================================
 
-console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v11.3...');
+console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v11.4...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR
     },
     
-    VERSION: "11.3.0",
+    VERSION: "11.4.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     CHANNEL_LINK: "https://t.me/+LP3ZTdajIeE2YjI0",
@@ -153,7 +153,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "11.3";
+        this.algorithmVersion = "11.4";
     }
 
     generateSmartPrediction(userId) {
@@ -194,7 +194,7 @@ class UltraStrictImageValidator {
     constructor(openaiApiKey) {
         this.openaiApiKey = openaiApiKey;
         this.referenceImageKeywords = [
-            "goal", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة",
+            "goal", "gool", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة",
             "5", "2", "1", "100", "50", "10", "0.1", "x",
             "كيفية اللعب", "messi", "ronaldo", "neymar"
         ];
@@ -219,7 +219,7 @@ class UltraStrictImageValidator {
                             '• الأرقام الموجودة في اللعبة (5, 2, 1, 100, 50, 10, 0.1)\n' +
                             '• الشخصيات: ميسي، رونالدو، نيمار\n\n' +
                             '📸 *يرجى إرسال صورة واضحة من داخل لعبة GOAL فقط*\n' +
-                            '🚫 *مرفوض:* صور شخصية، خلفيات، مباريات حقيقية*',
+                            '🚫 *مرفوض:* صور شخصية، خلفيات، مباريات حقيقية، شاشات أخرى*',
                     confidence: 0.0
                 };
             }
@@ -275,9 +275,9 @@ class UltraStrictImageValidator {
                 
                 console.log('📄 النص المستخرج من الصورة:', cleanText);
 
-                // الكلمات المفتاحية الأساسية الإلزامية - يجب وجود 4 منها على الأقل
+                // الكلمات المفتاحية الأساسية الإلزامية - يجب وجود 5 منها على الأقل
                 const mandatoryKeywords = [
-                    "goal", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة"
+                    "goal", "gool", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة"
                 ];
 
                 // الكلمات الثانوية - تساعد في التأكيد
@@ -288,9 +288,15 @@ class UltraStrictImageValidator {
                 // الكلمات الخاصة بالشخصيات
                 const playerKeywords = ["messi", "ronaldo", "neymar", "ميسي", "رونالدو", "نيمار"];
 
+                // الكلمات الممنوعة - إذا وجدت أي منها ترفض الصورة
+                const forbiddenKeywords = [
+                    "بورت", "نوقعات", "مستخدمة", "العصورة", "التحليل", "نتيجة", "الاحتمالية", "الثقة",
+                    "message", "gool", "gool", "gool"
+                ];
+
                 // البحث عن الكلمات الإلزامية
                 const foundMandatory = mandatoryKeywords.filter(word => {
-                    if (word === "goal" || word === "هدف") {
+                    if (word === "goal" || word === "هدف" || word === "gool") {
                         // للكلمات الأساسية، نبحث بأي شكل
                         return cleanTextLower.includes(word.toLowerCase());
                     } else {
@@ -317,13 +323,36 @@ class UltraStrictImageValidator {
                     cleanTextLower.includes(word.toLowerCase())
                 );
 
+                // البحث عن الكلمات الممنوعة
+                const foundForbidden = forbiddenKeywords.filter(word => 
+                    cleanTextLower.includes(word.toLowerCase())
+                );
+
                 console.log(`🔍 الكلمات الإلزامية الموجودة:`, foundMandatory);
                 console.log(`🔍 الكلمات الثانوية الموجودة:`, foundSecondary);
                 console.log(`🔍 اللاعبين الموجودين:`, foundPlayers);
+                console.log(`🚫 الكلمات الممنوعة الموجودة:`, foundForbidden);
                 console.log(`📊 الإجمالي: ${foundMandatory.length} إلزامي + ${foundSecondary.length} ثانوي + ${foundPlayers.length} لاعب`);
 
-                // التحقق الصارم جداً: يجب وجود 4 كلمات إلزامية على الأقل + لاعب واحد على الأقل
-                const hasRequiredMandatory = foundMandatory.length >= 4;
+                // التحقق من وجود كلمات ممنوعة - إذا وجدت أي كلمة ممنوعة ترفض الصورة فوراً
+                if (foundForbidden.length > 0) {
+                    return {
+                        valid: false,
+                        confidence: 0.0,
+                        method: 'strict_ocr',
+                        reason: `تم العثور على كلمات ممنوعة: ${foundForbidden.join(', ')} - هذه صورة من البوت وليست من اللعبة`,
+                        foundMandatory: foundMandatory,
+                        foundSecondary: foundSecondary,
+                        foundPlayers: foundPlayers,
+                        foundForbidden: foundForbidden,
+                        foundCount: foundMandatory.length + foundSecondary.length + foundPlayers.length,
+                        requiredMandatory: 5,
+                        requiredPlayers: 1
+                    };
+                }
+
+                // التحقق الصارم جداً: يجب وجود 5 كلمات إلزامية على الأقل + لاعب واحد على الأقل
+                const hasRequiredMandatory = foundMandatory.length >= 5;
                 const hasRequiredPlayers = foundPlayers.length >= 1;
 
                 if (hasRequiredMandatory && hasRequiredPlayers) {
@@ -342,7 +371,7 @@ class UltraStrictImageValidator {
                 } else {
                     let reason = '';
                     if (!hasRequiredMandatory) {
-                        reason += `لم يتم العثور على الكلمات الإلزامية الكافية (${foundMandatory.length} من 4)`;
+                        reason += `لم يتم العثور على الكلمات الإلزامية الكافية (${foundMandatory.length} من 5)`;
                     }
                     if (!hasRequiredPlayers) {
                         if (reason) reason += ' و ';
@@ -358,7 +387,7 @@ class UltraStrictImageValidator {
                         foundSecondary: foundSecondary,
                         foundPlayers: foundPlayers,
                         foundCount: foundMandatory.length + foundSecondary.length + foundPlayers.length,
-                        requiredMandatory: 4,
+                        requiredMandatory: 5,
                         requiredPlayers: 1
                     };
                 }
@@ -468,7 +497,7 @@ class UltraStrictImageValidator {
             confidence: Math.min(confidence, 98),
             reasoning: analysisText,
             timestamp: new Date().toISOString(),
-            algorithm: "11.3_advanced",
+            algorithm: "11.4_advanced",
             emoji: type.includes('GOAL') ? '⚽' : '❌'
         };
     }
@@ -485,7 +514,7 @@ class UltraStrictImageValidator {
                 `🎯 التحليل الفني: الوضع الهجومي المهيمن والفرص الواضحة تشير إلى إمكانية تسجيل هدف بنسبة ${probability}%` :
                 `🛡️ التحليل الفني: الدفاع المنظم والتحكم في المناطق الحرجة يقلل فرص التسجيل بنسبة ${probability}%`,
             timestamp: new Date().toISOString(),
-            algorithm: "11.3_fallback",
+            algorithm: "11.4_fallback",
             emoji: isGoal ? '⚽' : '❌'
         };
     }
@@ -1167,7 +1196,7 @@ ${userData.subscription_status !== 'active' ?
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 نجاح! AI GOAL Predictor v11.3 يعمل الآن!');
+    console.log('🎉 نجاح! AI GOAL Predictor v11.4 يعمل الآن!');
     console.log('👤 المطور:', CONFIG.DEVELOPER);
     console.log('📢 القناة:', CONFIG.CHANNEL);
     console.log('🔗 رابط القناة:', CONFIG.CHANNEL_LINK);
