@@ -1,6 +1,6 @@
 {
   "name": "ai-goal-predictor-bot",
-  "version": "11.3.0",
+  "version": "11.4.0",
   "description": "AI Goal Predictor Bot with Ultra Strict Image Validation",
   "main": "bot.js",
   "scripts": {
