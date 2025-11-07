@@ -1,32 +1,28 @@
-# ===================================================
-# 🔧 CONFIGURATION - AI GOAL PREDICTOR BOT
-# ===================================================
+# 🔐 TELEGRAM BOT CONFIG
+BOT_TOKEN=your_telegram_bot_token_here
+ADMIN_ID=your_admin_user_id_here
 
-# 🤖 TELEGRAM BOT CONFIG
-BOT_TOKEN=8125363786:AAFZaOGSAvq_p8Sc8cq2bIKZlpe4ej7tmdU
-ADMIN_ID=6565594143
+# 🧠 AI API KEYS
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 
-# 🧠 AI APIs
-GEMINI_API_KEY=AIzaSyCtjtT98-M5v6t8qICPSDw-1TLwPneyaQc
-OPENAI_API_KEY=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
-
-# 📸 IMAGE UPLOAD
-IMGBB_API_KEY=42b155a527bee21e62e524a31fe9b1ee
-
-# 🔥 FIREBASE CONFIG (From service account file)
-FIREBASE_PRIVATE_KEY_ID=5c64bc8c07e94dd271388582545f47fa4afee4f9
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDDXZ6hoQ3APNmj\nhZsDwDra0rgkJw3E1B4uJcv46uOcXSwIlHRqKZ9ZJ0BtAO0LrEv/SHmyrlZ1/s71\nF67laIlbnH83SIbxO0ObeYx/Sq9j07hsdCNZAg4iinM8XGPHKUFOT+Zk0HWSkI4O\nQMDpXqg9rjukLUDTHNCAmKtK8BUHN/eZX4J8KNAEewFyGkBPQoFzAvIAshohkiLV\nyxvr7L5EpszzQGfq6znkuV78PfyNPR8SufVbCy2PKEUy01uZxBGv/mAH88yfaI3B\n6amPdo/2bZkwLl/wpMBALTXKz9R3ZfAfo9FaXsdD7cQt4SJEYcTQP3jXjGFSawS+\nuWu8WNrRAgMBAAECggEARcfcP84HW9lAQYSYzFuuifeHFz6tz9aWGxScCQJZH0I2\nVrAz7rGEPbNj8ytIAAngMURBV72mm0nSwT9e1IkkusioteXdcS+iY9ekA9l40RbQ\nAkjvUT0HMHY0V+SGLR6CuYaXe/3raNjiLJwba5/IRxPDMM6LH3zkynH9iOw9DpDi\nyAKiog4/i1Oh0db7F48ukjVxtXDQHPU7ba0u99go/JoOJLIEdY4bnO/l/5mgcVAu\n9dBRLp0wPp86MPNizxoPIVse3mb9PCl1RieHJ0kLNeJO1XpKH3DBp9vyc9AfNBLf\n8ekU1odpWglGQX+93BCpdQ/K9lN2ORgXIfX0knEn2wKBgQDgn4bDzaSLYaL4vD88\nl317F8WUtcpWTBQmpkfsErpt8DzItfx3x6hu8iXwvEo/P9GAVYYlTsEkhkNANZWm\nBigdjYaHNx8tfoUra7NnlfkjeM4erwU4hko1K/JGRxrFzyriihmXXiKN7/5wIivs\nn83lGP7JCcJtY1GCh/7lRGzUuwKBgQDep9p6BxLnAq/R7QDkjgG68QsoQNgCw2qR\nsgNMI9tHp4uQ7kblA8v2soRZsJUoQ7rDKYAi7ygV3W845sLHMegZkJDKOgLQiVwP\ncGw2qyhCGOqyAKuF9jqelRy4kA2sT63uoa8uw3fa2Fwj6ZvbAuFXF8oLjUK7URFy\nOXj+xfGb4wKBgQC39O3BXaDsJUH6wvBnBwnUzVsatubGVfgKzxMH2y6i6qRdG+1v\niyv98IHx7cJAmltQ5rm9xAmZh/t7kmbEWTZxPX53LkVyVLNrJAEBTGmFC2KC7oMw\nD4qmkR8RPxpF9awBa2gZ9xYFeA7AdrvSRe2xOg8vRbbdLwGKDSZLTQZ0EQKBgCTf\nPTH6G+o/qqgkDILM9YJkyok2+86xV+OazCr+wSCDoXw1yW3BjDRlab+Em57YYIRT\nShH+8u90BSgyJs1f+WTKaP/kTXUFWkaAQptnCrqvb6ZcsAr2NMzwOpph2LHRXCdp\nhR5EZoPKUq/rztCdEH4gxWfWU9e7XB1DYUMnupQrAoGBAIlP0e9Fj4fJIpZ1XAkl\nB1Xzk0LlQHO8gCD2uVfuIenqa47CPYTiYG99C+Hrb8IuIf9abKW9+juc8M9iPW+h\nThLt6XB6PDffNTnq/bP9pIclwsfVoj7Fdk8bhjbBMZqnaOvwEnhY/jW9aAPlgoua\nQrGzKTrmDOvCcFOnlMX6Aymd\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@bot-tlegram-9f4b5.iam.gserviceaccount.com
-FIREBASE_CLIENT_ID=105258007010795889602
-FIREBASE_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40bot-tlegram-9f4b5.iam.gserviceaccount.com
-FIREBASE_PROJECT_ID=bot-tlegram-9f4b5
-FIREBASE_DATABASE_URL=https://bot-tlegram-9f4b5-default-rtdb.firebaseio.com
+# 🔥 FIREBASE CONFIG
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_PRIVATE_KEY_ID=your_private_key_id
+FIREBASE_PRIVATE_KEY="your_private_key_here"
+FIREBASE_CLIENT_EMAIL=your_client_email_here
+FIREBASE_CLIENT_ID=your_client_id_here
+FIREBASE_CERT_URL=your_cert_url_here
+FIREBASE_DATABASE_URL=your_database_url_here
 
 # 💰 PAYMENT LINKS
-PAYMENT_WEEK=https://binance.com/payment/weekly
-PAYMENT_MONTH=https://binance.com/payment/monthly
-PAYMENT_3MONTHS=https://binance.com/payment/3months
-PAYMENT_YEAR=https://binance.com/payment/yearly
+PAYMENT_WEEK=https://payment.link/week
+PAYMENT_MONTH=https://payment.link/month
+PAYMENT_3MONTHS=https://payment.link/3months
+PAYMENT_YEAR=https://payment.link/year
+
+# 📸 IMAGE UPLOAD
+IMGBB_API_KEY=your_imgbb_api_key_here
 
 # 🌐 SERVER CONFIG
 PORT=3000
