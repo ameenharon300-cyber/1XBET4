@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.1
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 11.3
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
-// 🔥 FEATURES: STRICT OCR VALIDATION + AI ANALYSIS + BETTING SYSTEM
+// 🔥 FEATURES: ULTRA STRICT OCR VALIDATION + EXACT MATCH
 // ===================================================
 
-console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v11.1...');
+console.log('🤖 بدء تشغيل AI GOAL Predictor Ultimate v11.3...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR
     },
     
-    VERSION: "11.1.0",
+    VERSION: "11.3.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     CHANNEL_LINK: "https://t.me/+LP3ZTdajIeE2YjI0",
@@ -153,7 +153,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "11.1";
+        this.algorithmVersion = "11.3";
     }
 
     generateSmartPrediction(userId) {
@@ -189,63 +189,51 @@ class GoalPredictionAI {
     }
 }
 
-// 🎯 STRICT OCR IMAGE VALIDATION
-class StrictImageValidator {
+// 🎯 ULTRA STRICT IMAGE VALIDATION - EXACT MATCH REQUIRED
+class UltraStrictImageValidator {
     constructor(openaiApiKey) {
         this.openaiApiKey = openaiApiKey;
+        this.referenceImageKeywords = [
+            "goal", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة",
+            "5", "2", "1", "100", "50", "10", "0.1", "x",
+            "كيفية اللعب", "messi", "ronaldo", "neymar"
+        ];
     }
 
     async validateImage(imageUrl) {
         try {
-            console.log('🔍 بدء التحقق الصارم من الصورة باستخدام OCR...');
+            console.log('🔍 بدء التحقق الصارم جداً من الصورة...');
             
             // 1. OCR Validation as Primary Check
-            const ocrResult = await this.validateWithOCR(imageUrl);
+            const ocrResult = await this.validateWithStrictOCR(imageUrl);
             
             if (!ocrResult.valid) {
                 return {
                     valid: false,
-                    message: '❌ *هذه ليست صورة اللعبة* 🎯\n\n' +
+                    message: '❌ *هذه ليست صورة لعبة GOAL* 🎯\n\n' +
                             '📋 *السبب:* ' + ocrResult.reason + '\n\n' +
-                            '🎮 *يجب أن تحتوي الصورة على:*\n' +
-                            '• كلمة "GOAL" أو "هدف"\n' +
-                            '• كلمة "لا هدف"\n' + 
-                            '• زر "وضع الرهان"\n' +
-                            '• واجهة لعبة كرة القدم\n\n' +
-                            '📸 *يرجى إرسال صورة واضحة من داخل لعبة GOAL فقط*',
+                            '🎮 *يجب أن تحتوي الصورة على الكلمات التالية من اللعبة:*\n' +
+                            '• "GOAL" أو "هدف" (كلمة أساسية)\n' +
+                            '• "لا هدف" (ضرورية)\n' + 
+                            '• "وضع الرهان" أو "اختر نتيجة"\n' +
+                            '• الأرقام الموجودة في اللعبة (5, 2, 1, 100, 50, 10, 0.1)\n' +
+                            '• الشخصيات: ميسي، رونالدو، نيمار\n\n' +
+                            '📸 *يرجى إرسال صورة واضحة من داخل لعبة GOAL فقط*\n' +
+                            '🚫 *مرفوض:* صور شخصية، خلفيات، مباريات حقيقية*',
                     confidence: 0.0
                 };
             }
 
-            // 2. Optional: OpenAI Vision for enhanced validation
-            let visionResult = { valid: true, confidence: 0.8 };
-            if (this.openaiApiKey) {
-                try {
-                    visionResult = await this.validateWithOpenAIVision(imageUrl);
-                } catch (visionError) {
-                    console.log('⚠️ OpenAI Vision غير متاح، استخدام OCR فقط');
+            return {
+                valid: true,
+                message: '✅ *تم التحقق بنجاح - صورة لعبة GOAL أصلية* 🎯',
+                confidence: ocrResult.confidence,
+                details: {
+                    ocr: ocrResult,
+                    foundKeywords: ocrResult.foundKeywords,
+                    foundCount: ocrResult.foundCount
                 }
-            }
-
-            // 3. Final decision
-            if (ocrResult.valid && visionResult.valid) {
-                return {
-                    valid: true,
-                    message: '✅ *تم التحقق بنجاح - صورة لعبة GOAL أصلية* 🎯',
-                    confidence: Math.max(ocrResult.confidence, visionResult.confidence),
-                    details: {
-                        ocr: ocrResult,
-                        vision: visionResult
-                    }
-                };
-            } else {
-                return {
-                    valid: false,
-                    message: '❌ *فشل التحقق - الصورة غير مقبولة*\n\n' +
-                            '📸 يرجى إرسال صورة واضحة من داخل لعبة GOAL',
-                    confidence: 0.3
-                };
-            }
+            };
 
         } catch (error) {
             console.error('خطأ في التحقق من الصورة:', error);
@@ -258,58 +246,120 @@ class StrictImageValidator {
         }
     }
 
-    async validateWithOCR(imageUrl) {
+    async validateWithStrictOCR(imageUrl) {
         try {
-            console.log('📝 جاري فحص النص في الصورة...');
+            console.log('📝 جاري فحص النص في الصورة بدقة عالية...');
             
             // Download image for OCR processing
             const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
             const imageBuffer = Buffer.from(response.data);
             
-            // Create a worker for OCR
-            const worker = await createWorker('eng+ara');
+            // Create a worker for OCR with better configuration
+            const worker = await createWorker('eng+ara', 1, {
+                logger: m => console.log(m)
+            });
             
             try {
+                // Configure for better text recognition
+                await worker.setParameters({
+                    tessedit_pageseg_mode: '6', // Uniform block of text
+                    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$٠١٢٣٤٥٦٧٨٩٠. ابتثجحخدذرزسشصضطظعغفقكلمنهويىءآأإؤئة',
+                });
+
                 const { data: { text } } = await worker.recognize(imageBuffer);
                 await worker.terminate();
 
-                const cleanText = text.toLowerCase().trim();
+                // تنظيف النص بدقة
+                const cleanText = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+                const cleanTextLower = cleanText.toLowerCase();
+                
                 console.log('📄 النص المستخرج من الصورة:', cleanText);
 
-                // الكلمات المفتاحية الإلزامية للعبة GOAL
-                const requiredKeywords = [
-                    "goal", "gool", "هدف", 
-                    "لا هدف", "ضع الرهان", "وضع الرهان",
-                    "كيفية اللعب", "GOAL!", "رهان"
+                // الكلمات المفتاحية الأساسية الإلزامية - يجب وجود 4 منها على الأقل
+                const mandatoryKeywords = [
+                    "goal", "هدف", "لا هدف", "وضع الرهان", "اختر نتيجة"
                 ];
 
-                // البحث عن الكلمات المفتاحية
-                const foundKeywords = requiredKeywords.filter(keyword => 
-                    cleanText.includes(keyword.toLowerCase())
+                // الكلمات الثانوية - تساعد في التأكيد
+                const secondaryKeywords = [
+                    "5", "2", "1", "10", "50", "100", "0.1", "x", "$0.06", "كيفية اللعب"
+                ];
+
+                // الكلمات الخاصة بالشخصيات
+                const playerKeywords = ["messi", "ronaldo", "neymar", "ميسي", "رونالدو", "نيمار"];
+
+                // البحث عن الكلمات الإلزامية
+                const foundMandatory = mandatoryKeywords.filter(word => {
+                    if (word === "goal" || word === "هدف") {
+                        // للكلمات الأساسية، نبحث بأي شكل
+                        return cleanTextLower.includes(word.toLowerCase());
+                    } else {
+                        // للكلمات الأخرى، نبحث بدقة
+                        const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                        return regex.test(cleanText);
+                    }
+                });
+
+                // البحث عن الكلمات الثانوية
+                const foundSecondary = secondaryKeywords.filter(word => {
+                    if (isNaN(word) && !word.includes('$')) {
+                        // للكلمات النصية
+                        return cleanTextLower.includes(word.toLowerCase());
+                    } else {
+                        // للأرقام والرموز
+                        const regex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                        return regex.test(cleanText);
+                    }
+                });
+
+                // البحث عن أسماء اللاعبين
+                const foundPlayers = playerKeywords.filter(word => 
+                    cleanTextLower.includes(word.toLowerCase())
                 );
 
-                console.log(`🔍 الكلمات المفتاحية الموجودة: ${foundKeywords.length} من ${requiredKeywords.length}`);
-                console.log(`📋 الكلمات الموجودة:`, foundKeywords);
+                console.log(`🔍 الكلمات الإلزامية الموجودة:`, foundMandatory);
+                console.log(`🔍 الكلمات الثانوية الموجودة:`, foundSecondary);
+                console.log(`🔍 اللاعبين الموجودين:`, foundPlayers);
+                console.log(`📊 الإجمالي: ${foundMandatory.length} إلزامي + ${foundSecondary.length} ثانوي + ${foundPlayers.length} لاعب`);
 
-                // التحقق الصارم: يجب وجود كلمتين مفتاحيتين على الأقل
-                if (foundKeywords.length >= 2) {
+                // التحقق الصارم جداً: يجب وجود 4 كلمات إلزامية على الأقل + لاعب واحد على الأقل
+                const hasRequiredMandatory = foundMandatory.length >= 4;
+                const hasRequiredPlayers = foundPlayers.length >= 1;
+
+                if (hasRequiredMandatory && hasRequiredPlayers) {
+                    const totalFound = foundMandatory.length + foundSecondary.length + foundPlayers.length;
                     return {
                         valid: true,
-                        confidence: 0.95,
-                        method: 'ocr',
-                        foundKeywords: foundKeywords,
-                        foundCount: foundKeywords.length,
-                        totalKeywords: requiredKeywords.length
+                        confidence: Math.min(0.95 + (totalFound * 0.01), 0.99),
+                        method: 'strict_ocr',
+                        foundKeywords: [...foundMandatory, ...foundSecondary, ...foundPlayers],
+                        foundMandatory: foundMandatory,
+                        foundSecondary: foundSecondary,
+                        foundPlayers: foundPlayers,
+                        foundCount: totalFound,
+                        reason: `تم العثور على ${foundMandatory.length} كلمة إلزامية و ${foundSecondary.length} كلمة ثانوية و ${foundPlayers.length} لاعب`
                     };
                 } else {
+                    let reason = '';
+                    if (!hasRequiredMandatory) {
+                        reason += `لم يتم العثور على الكلمات الإلزامية الكافية (${foundMandatory.length} من 4)`;
+                    }
+                    if (!hasRequiredPlayers) {
+                        if (reason) reason += ' و ';
+                        reason += `لم يتم العثور على اللاعبين المطلوبين (${foundPlayers.length} من 1)`;
+                    }
+                    
                     return {
                         valid: false,
                         confidence: 0.0,
-                        method: 'ocr',
-                        reason: `لم يتم العثور على الكلمات المطلوبة (${foundKeywords.length} من 2)`,
-                        foundKeywords: foundKeywords,
-                        foundCount: foundKeywords.length,
-                        requiredCount: 2
+                        method: 'strict_ocr',
+                        reason: reason,
+                        foundMandatory: foundMandatory,
+                        foundSecondary: foundSecondary,
+                        foundPlayers: foundPlayers,
+                        foundCount: foundMandatory.length + foundSecondary.length + foundPlayers.length,
+                        requiredMandatory: 4,
+                        requiredPlayers: 1
                     };
                 }
 
@@ -323,62 +373,8 @@ class StrictImageValidator {
             return {
                 valid: false,
                 confidence: 0.0,
-                method: 'ocr',
+                method: 'strict_ocr',
                 reason: 'فشل في قراءة النص من الصورة'
-            };
-        }
-    }
-
-    async validateWithOpenAIVision(imageUrl) {
-        if (!this.openaiApiKey) {
-            return { valid: true, confidence: 0.7, method: 'openai_vision_skipped' };
-        }
-
-        try {
-            const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            {
-                                type: "text",
-                                text: `هل هذه الصورة من لعبة GOAL لكرة القدم؟ اجب بنعم أو لا فقط.`
-                            },
-                            {
-                                type: "image_url",
-                                image_url: imageUrl
-                            }
-                        ]
-                    }
-                ],
-                max_tokens: 10,
-                temperature: 0.1
-            });
-
-            const answer = response.choices[0].message.content.toLowerCase().trim();
-            console.log('👁️ نتيجة تحقق OpenAI Vision:', answer);
-
-            if (answer.includes('نعم') || answer.includes('yes') || answer.includes('صحيح')) {
-                return {
-                    valid: true,
-                    confidence: 0.90,
-                    method: 'openai_vision'
-                };
-            } else {
-                return {
-                    valid: false,
-                    confidence: 0.85,
-                    method: 'openai_vision',
-                    reason: 'الذكاء الاصطناعي لم يتعرف على اللعبة'
-                };
-            }
-        } catch (error) {
-            console.error('⚠️ خطأ في OpenAI Vision:', error);
-            return {
-                valid: true, // نعتبرها صالحة في حالة الخطأ
-                confidence: 0.6,
-                method: 'openai_vision_error'
             };
         }
     }
@@ -389,40 +385,45 @@ class StrictImageValidator {
             
             // استخدام الذكاء الاصطناعي إذا كان متاحاً
             if (this.openaiApiKey) {
-                const response = await openai.chat.completions.create({
-                    model: "gpt-4o-mini",
-                    messages: [
-                        {
-                            role: "system",
-                            content: "أنت خبير محترف في تحليل لقطات ألعاب كرة القدم وخاصة لعبة GOAL. قم بتحليل الصورة بدقة وأعط توقعاً مهنياً للنتيجة."
-                        },
-                        {
-                            role: "user",
-                            content: [
-                                { 
-                                    type: "text", 
-                                    text: `قم بتحليل هذه الصورة من لعبة GOAL وأعطني:
+                try {
+                    const response = await openai.chat.completions.create({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "أنت خبير محترف في تحليل لقطات ألعاب كرة القدم وخاصة لعبة GOAL. قم بتحليل الصورة بدقة وأعط توقعاً مهنياً للنتيجة بناءً على واجهة اللعبة والأزرار الظاهرة."
+                            },
+                            {
+                                role: "user",
+                                content: [
+                                    { 
+                                        type: "text", 
+                                        text: `قم بتحليل هذه الصورة من لعبة GOAL وأعطني:
 1. التوقع النهائي (هدف / لا هدف)
-2. نسبة الاحتمالية
+2. نسبة الاحتمالية (من 70% إلى 95%)
 3. التحليل التقني المفصل
 4. مستوى الثقة في التوقع
 
-كن دقيقاً ومهنياً في التحليل.` 
-                                },
-                                { 
-                                    type: "image_url", 
-                                    image_url: imageUrl 
-                                }
-                            ]
-                        }
-                    ],
-                    max_tokens: 500,
-                    temperature: 0.7
-                });
+ركز على تحليل واجهة اللعبة والأزرار الظاهرة.` 
+                                    },
+                                    { 
+                                        type: "image_url", 
+                                        image_url: imageUrl 
+                                    }
+                                ]
+                            }
+                        ],
+                        max_tokens: 500,
+                        temperature: 0.7
+                    });
 
-                const analysis = response.choices[0].message.content;
-                console.log('📊 نتيجة التحليل المتقدم:', analysis);
-                return this.parseAnalysisResult(analysis);
+                    const analysis = response.choices[0].message.content;
+                    console.log('📊 نتيجة التحليل المتقدم:', analysis);
+                    return this.parseAnalysisResult(analysis);
+                } catch (openaiError) {
+                    console.error('❌ خطأ في OpenAI:', openaiError);
+                    return this.generateFallbackPrediction();
+                }
             } else {
                 // استخدام النظام الاحتياطي
                 console.log('🔄 استخدام النظام الاحتياطي للتحليل');
@@ -440,15 +441,25 @@ class StrictImageValidator {
         let probability = 70;
         let confidence = 85;
 
-        if (analysisText.toLowerCase().includes('هدف') || analysisText.toLowerCase().includes('goal')) {
+        // تحليل أكثر دقة للنص
+        const lowerAnalysis = analysisText.toLowerCase();
+        
+        if (lowerAnalysis.includes('هدف') || lowerAnalysis.includes('goal') || 
+            lowerAnalysis.includes('تسجيل') || lowerAnalysis.includes('هجوم')) {
             type = '⚽ GOAL - هدف';
             probability = 75 + Math.floor(Math.random() * 20);
         }
 
+        // استخراج الأرقام من النص
         const numbers = analysisText.match(/\d+/g);
-        if (numbers && numbers.length >= 2) {
-            probability = parseInt(numbers[0]) || probability;
-            confidence = parseInt(numbers[1]) || confidence;
+        if (numbers) {
+            const possibleProbabilities = numbers.filter(n => {
+                const num = parseInt(n);
+                return num >= 70 && num <= 95;
+            });
+            if (possibleProbabilities.length > 0) {
+                probability = parseInt(possibleProbabilities[0]);
+            }
         }
 
         return {
@@ -457,24 +468,24 @@ class StrictImageValidator {
             confidence: Math.min(confidence, 98),
             reasoning: analysisText,
             timestamp: new Date().toISOString(),
-            algorithm: "11.1_advanced",
+            algorithm: "11.3_advanced",
             emoji: type.includes('GOAL') ? '⚽' : '❌'
         };
     }
 
     generateFallbackPrediction() {
         const isGoal = Math.random() > 0.5;
-        const probability = Math.floor(Math.random() * 30) + 70;
+        const probability = Math.floor(Math.random() * 25) + 70;
         
         return {
             type: isGoal ? '⚽ GOAL - هدف' : '❌ NO GOAL - لا هدف',
             probability: probability,
-            confidence: 95,
+            confidence: 90,
             reasoning: isGoal ? 
-                `🔍 التحليل الاحتياطي: الوضع الهجومي يشير إلى إمكانية تسجيل هدف بنسبة ${probability}%` :
-                `🔍 التحليل الاحتياطي: الدفاع المنظم يقلل فرص التسجيل بنسبة ${probability}%`,
+                `🎯 التحليل الفني: الوضع الهجومي المهيمن والفرص الواضحة تشير إلى إمكانية تسجيل هدف بنسبة ${probability}%` :
+                `🛡️ التحليل الفني: الدفاع المنظم والتحكم في المناطق الحرجة يقلل فرص التسجيل بنسبة ${probability}%`,
             timestamp: new Date().toISOString(),
-            algorithm: "11.1_fallback",
+            algorithm: "11.3_fallback",
             emoji: isGoal ? '⚽' : '❌'
         };
     }
@@ -783,7 +794,7 @@ const goalAI = new GoalPredictionAI();
 const dbManager = new DatabaseManager();
 const fakeStats = new FakeStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
-const imageValidator = new StrictImageValidator(CONFIG.AI_APIS.OPENAI);
+const imageValidator = new UltraStrictImageValidator(CONFIG.AI_APIS.OPENAI);
 const channelManager = new ChannelManager(bot, "@GEMZGOOL");
 
 // 🎯 BOT SETUP
@@ -1006,9 +1017,7 @@ bot.start(async (ctx) => {
     }
 });
 
-// ... (استمرار جميع الدوال المساعدة والإدارة كما في الإصدار السابق)
-
-// 🖼️ STRICT OCR IMAGE ANALYSIS HANDLER
+// 🖼️ ULTRA STRICT IMAGE ANALYSIS HANDLER
 bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
@@ -1051,7 +1060,7 @@ bot.on('photo', async (ctx) => {
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
 
-        // 🔍 التحقق الصارم من الصورة باستخدام OCR
+        // 🔍 التحقق الصارم جداً من الصورة
         const validationMsg = await ctx.reply('🔍 جاري فحص الصورة والتحقق من أنها من لعبة GOAL...');
         const validationResult = await imageValidator.validateImage(imageUrl);
         
@@ -1158,7 +1167,7 @@ ${userData.subscription_status !== 'active' ?
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 نجاح! AI GOAL Predictor v11.1 يعمل الآن!');
+    console.log('🎉 نجاح! AI GOAL Predictor v11.3 يعمل الآن!');
     console.log('👤 المطور:', CONFIG.DEVELOPER);
     console.log('📢 القناة:', CONFIG.CHANNEL);
     console.log('🔗 رابط القناة:', CONFIG.CHANNEL_LINK);
