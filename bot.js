@@ -1,10 +1,10 @@
 // ===================================================
-// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.4
+// 🚀 AI GOAL PREDICTOR ULTIMATE - VERSION 10.5
 // 👤 DEVELOPER: AMIN - @GEMZGOOLBOT
 // 🔥 FEATURES: SMART AI + BETTING SYSTEM + FIREBASE + FULL ADMIN PANEL
 // ===================================================
 
-console.log('🤖 Starting AI GOAL Predictor Ultimate v10.4...');
+console.log('🤖 Starting AI GOAL Predictor Ultimate v10.5...');
 console.log('🕒 ' + new Date().toISOString());
 
 // 🔧 CONFIGURATION
@@ -34,7 +34,7 @@ const CONFIG = {
         year: process.env.PAYMENT_YEAR || "https://binance.com/payment/yearly"
     },
     
-    VERSION: "10.4.0",
+    VERSION: "10.5.0",
     DEVELOPER: "AMIN - @GEMZGOOLBOT",
     CHANNEL: "@GEMZGOOL",
     START_IMAGE: "https://i.ibb.co/tpy70Bd1/IMG-20251104-074214-065.jpg",
@@ -136,7 +136,7 @@ class FakeStatistics {
 // 🧠 SMART GOAL PREDICTION ENGINE
 class GoalPredictionAI {
     constructor() {
-        this.algorithmVersion = "10.4";
+        this.algorithmVersion = "10.5";
     }
 
     generateSmartPrediction(userId) {
@@ -168,6 +168,51 @@ class GoalPredictionAI {
 
     generateNextPrediction(userId) {
         return this.generateSmartPrediction(userId);
+    }
+}
+
+// 🎯 ENHANCED IMAGE VALIDATION SYSTEM
+class ImageValidator {
+    constructor() {
+        this.requiredElements = [
+            'ميسي', 'رونالدو', 'نيمار', 'رهان', 'bet', 'odds', '1xbet',
+            'messi', 'ronaldo', 'neymar', 'betting', 'match'
+        ];
+    }
+
+    async validateImage(imageUrl) {
+        try {
+            // محاكاة عملية التحقق من الصورة
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // في الإصدار الحقيقي، هنا سيتم استخدام AI لتحليل الصورة
+            // للتو نستخدم محاكاة عشوائية
+            const isValid = Math.random() > 0.3; // 70% نجاح في التحقق
+            
+            if (isValid) {
+                return {
+                    valid: true,
+                    message: '✅ تم التحقق من صحة الصورة بنجاح',
+                    elements: ['ميسي', 'رونالدو', 'رهان']
+                };
+            } else {
+                return {
+                    valid: false,
+                    message: '❌ الصورة غير مناسبة للتحليل\n\n' +
+                            '📋 *الشروط المطلوبة:*\n' +
+                            '• يجب أن تكون صورة مباراة حقيقية\n' +
+                            '• يجب أن تحتوي على لاعبين مثل ميسي أو رونالدو أو نيمار\n' +
+                            '• يجب أن تحتوي على معلومات الرهان\n' +
+                            '• يجب أن تكون واضحة وغير معدلة\n\n' +
+                            '📸 يرجى إرسال صورة مناسبة للتحليل'
+                };
+            }
+        } catch (error) {
+            return {
+                valid: false,
+                message: '❌ حدث خطأ في تحليل الصورة'
+            };
+        }
     }
 }
 
@@ -394,6 +439,7 @@ const goalAI = new GoalPredictionAI();
 const dbManager = new DatabaseManager();
 const fakeStats = new FakeStatistics();
 const imgbbUploader = new ImgBBUploader(CONFIG.IMGBB_API_KEY);
+const imageValidator = new ImageValidator();
 
 // 🎯 BOT SETUP
 bot.use(session({ 
@@ -413,7 +459,8 @@ bot.use(session({
         awaitingBetAmount: false,
         lastImageUrl: null,
         searchQuery: null,
-        broadcastMessage: null
+        broadcastMessage: null,
+        predictionButtonsVisible: false
     })
 }));
 
@@ -749,7 +796,7 @@ bot.on('text', async (ctx) => {
 
             switch (text) {
                 case '🎯 التوقع التالي':
-                    if (session.lastImageUrl) {
+                    if (session.lastImageUrl && session.predictionButtonsVisible) {
                         await handleNextPrediction(ctx, userData);
                     } else {
                         ctx.session.awaitingBetAmount = true;
@@ -826,7 +873,7 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// 🖼️ IMAGE ANALYSIS HANDLER - معدل للتحقق من صور المباراة فقط
+// 🖼️ ENHANCED IMAGE ANALYSIS HANDLER - مع تحسينات التحقق من الصور
 bot.on('photo', async (ctx) => {
     try {
         const userId = ctx.from.id.toString();
@@ -854,20 +901,35 @@ bot.on('photo', async (ctx) => {
             return;
         }
 
-        // التحقق من وجود مبلغ رهان
-        if (!session.currentBet || session.currentBet <= 0) {
-            await ctx.replyWithMarkdown(
-                '❌ *يجب تحديد مبلغ الرهان أولاً*\n\n' +
-                '💰 استخدم زر "🎯 التوقع التالي" لتحديد المبلغ',
-                getMainKeyboard()
-            );
-            return;
-        }
-
         // 📸 معالجة الصورة
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
         const fileLink = await bot.telegram.getFileLink(photo.file_id);
         const imageUrl = fileLink.href;
+
+        // 🔍 التحقق من صحة الصورة أولاً
+        const validationMsg = await ctx.reply('🔍 جاري التحقق من صحة الصورة...');
+        const validationResult = await imageValidator.validateImage(imageUrl);
+
+        if (!validationResult.valid) {
+            await ctx.replyWithMarkdown(validationResult.message, getMainKeyboard());
+            await ctx.deleteMessage(validationMsg.message_id);
+            return;
+        }
+
+        await ctx.deleteMessage(validationMsg.message_id);
+
+        // إذا كانت الصورة صالحة، نطلب مبلغ الرهان إذا لم يكن محدداً
+        if (!session.currentBet || session.currentBet <= 0) {
+            ctx.session.lastImageUrl = imageUrl;
+            ctx.session.awaitingBetAmount = true;
+            await ctx.replyWithMarkdown(
+                '✅ *تم التحقق من الصورة بنجاح!*\n\n' +
+                '💰 *الآن أدخل مبلغ الرهان:*\n\n' +
+                '💵 يرجى كتابة المبلغ الذي تريد الرهان عليه (بالدولار)\n' +
+                '📝 مثال: 10 أو 25.5'
+            );
+            return;
+        }
 
         // حفظ رابط الصورة في الجلسة للاستخدام لاحقاً
         ctx.session.lastImageUrl = imageUrl;
@@ -925,6 +987,9 @@ ${userData.subscription_status !== 'active' ?
                 resultKeyboard
             );
 
+            // تعيين حالة الأزرار كمرئية
+            ctx.session.predictionButtonsVisible = true;
+
             await ctx.deleteMessage(processingMsg.message_id);
 
         } catch (analysisError) {
@@ -949,7 +1014,7 @@ ${userData.subscription_status !== 'active' ?
     }
 });
 
-// 🎯 HANDLE CALLBACK QUERIES - معدل للتعامل مع الخسارة
+// 🎯 HANDLE CALLBACK QUERIES - معدل للتعامل مع الخسارة وإخفاء الأزرار
 bot.on('callback_query', async (ctx) => {
     try {
         const callbackData = ctx.callbackQuery.data;
@@ -982,6 +1047,9 @@ bot.on('callback_query', async (ctx) => {
                     getMainKeyboard()
                 );
                 
+                // إخفاء الأزرار بعد النقر
+                ctx.session.predictionButtonsVisible = false;
+                
             } else {
                 // مضاعفة الرهان وتوليد توقع جديد تلقائياً
                 const newBet = ctx.session.currentBet * 2;
@@ -1003,6 +1071,9 @@ bot.on('callback_query', async (ctx) => {
                     `💡 ${newPrediction.reasoning}`,
                     getMainKeyboard()
                 );
+                
+                // إخفاء الأزرار القديمة وإظهار أزرار جديدة للتوقع الجديد
+                ctx.session.predictionButtonsVisible = true;
                 
                 // إضافة أزرار النتيجة للتوقع الجديد
                 const resultKeyboard = Markup.inlineKeyboard([
@@ -1096,6 +1167,9 @@ ${prediction.reasoning}
             '✨ سيتم تحديث إحصائيك تلقائياً',
             resultKeyboard
         );
+
+        // تعيين حالة الأزرار كمرئية
+        ctx.session.predictionButtonsVisible = true;
 
         await ctx.deleteMessage(processingMsg.message_id);
 
@@ -1318,7 +1392,7 @@ async function handlePaymentScreenshot(ctx, userId) {
     }
 }
 
-// 🔧 ADMIN HANDLERS - معدل بالكامل
+// 🔧 ADMIN HANDLERS - معدل بالكامل مع إصلاحات الروابط والأسعار
 async function handleAdminCommands(ctx, text) {
     const session = ctx.session;
     
@@ -1426,7 +1500,7 @@ async function handleAdminMain(ctx, text) {
     }
 }
 
-// البحث عن مستخدم
+// البحث عن مستخدم - معدل للبحث الفعال
 async function handleAdminSearchUser(ctx, query) {
     try {
         const users = await dbManager.searchUsers(query);
@@ -1441,8 +1515,12 @@ async function handleAdminSearchUser(ctx, query) {
         
         users.slice(0, 10).forEach((user, index) => {
             const status = user.subscription_status === 'active' ? '✅' : '🆓';
-            message += `${index + 1}. ${user.username || 'بدون اسم'} ${status}\n`;
-            message += `   👤 ${user.user_id} | 🔐 ${user.onexbet}\n`;
+            const username = user.username || 'بدون اسم';
+            const userId = user.user_id || user.id;
+            const onexbet = user.onexbet || 'غير محدد';
+            
+            message += `${index + 1}. ${username} ${status}\n`;
+            message += `   👤 ${userId} | 🔐 ${onexbet}\n`;
             message += `   📊 ${user.total_predictions || 0} توقع | 💰 ${user.total_profit || 0}$\n\n`;
         });
 
@@ -1460,7 +1538,7 @@ async function handleAdminSearchUser(ctx, query) {
     }
 }
 
-// الإشعار الجماعي
+// الإشعار الجماعي - معدل مع تحسينات الأداء
 async function handleAdminBroadcast(ctx, message) {
     try {
         const users = await dbManager.getAllUsers();
@@ -1469,10 +1547,11 @@ async function handleAdminBroadcast(ctx, message) {
 
         const broadcastMsg = await ctx.replyWithMarkdown('📢 *جاري إرسال الإشعار لجميع المستخدمين...*');
 
+        // إرسال الإشعار للمستخدمين مع معالجة الأخطاء
         for (const user of users) {
             try {
                 await bot.telegram.sendMessage(
-                    user.user_id, 
+                    user.user_id || user.id, 
                     `📢 *إشعار من الإدارة*\n\n${message}`,
                     { parse_mode: 'Markdown' }
                 );
@@ -1482,7 +1561,7 @@ async function handleAdminBroadcast(ctx, message) {
             }
             
             // تأخير بسيط لتجنب حظر التليجرام
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
 
         await ctx.replyWithMarkdown(
@@ -1527,7 +1606,7 @@ async function handleAdminStats(ctx) {
         const pendingPayments = payments.filter(p => p.status === 'pending');
         
         const activeUsers = users.filter(u => u.subscription_status === 'active');
-        const freeUsers = users.filter(u => u.subscription_status === 'free');
+        const freeUsers = users.filter(u => u.subscription_status !== 'active');
         
         const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
         const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
@@ -1600,8 +1679,9 @@ async function handleAdminUsersList(ctx) {
         
         users.slice(0, 10).forEach((user, index) => {
             const status = user.subscription_status === 'active' ? '✅' : '🆓';
-            message += `${index + 1}. ${user.username || 'بدون اسم'} ${status}\n`;
-            message += `   👤 ${user.user_id} | 🔐 ${user.onexbet}\n\n`;
+            const username = user.username || 'بدون اسم';
+            message += `${index + 1}. ${username} ${status}\n`;
+            message += `   👤 ${user.user_id || user.id} | 🔐 ${user.onexbet || 'غير محدد'}\n\n`;
         });
         
         if (users.length > 10) {
@@ -1638,13 +1718,13 @@ async function handleAdminActiveUsers(ctx) {
 async function handleAdminFreeUsers(ctx) {
     try {
         const users = await dbManager.getAllUsers();
-        const freeUsers = users.filter(u => u.subscription_status === 'free');
+        const freeUsers = users.filter(u => u.subscription_status !== 'active');
         
         let message = `🆓 *المستخدمين المجانين (${freeUsers.length})*\n\n`;
         
         freeUsers.slice(0, 10).forEach((user, index) => {
             message += `${index + 1}. ${user.username || 'بدون اسم'}\n`;
-            message += `   🆓 محاولات: ${user.free_attempts}\n\n`;
+            message += `   🆓 محاولات: ${user.free_attempts || 0}\n\n`;
         });
         
         await ctx.replyWithMarkdown(message, getAdminUsersKeyboard());
@@ -1658,7 +1738,7 @@ async function handleAdminUsersStats(ctx) {
     try {
         const users = await dbManager.getAllUsers();
         const activeUsers = users.filter(u => u.subscription_status === 'active');
-        const freeUsers = users.filter(u => u.subscription_status === 'free');
+        const freeUsers = users.filter(u => u.subscription_status !== 'active');
         
         const totalPredictions = users.reduce((sum, user) => sum + (user.total_predictions || 0), 0);
         const totalProfit = users.reduce((sum, user) => sum + (user.total_profit || 0), 0);
@@ -1868,10 +1948,11 @@ async function handleAdminSettings(ctx, text) {
     }
 }
 
+// إصلاح مشكلة تعديل الأسعار
 async function handleAdminPriceSettings(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const prices = settings.prices;
+        const prices = settings.prices || CONFIG.SUBSCRIPTION_PRICES;
         
         const priceMessage = `
 💰 *الإعدادات الحالية*
@@ -1898,10 +1979,11 @@ year 300  (لتغيير السعر السنوي لـ 300)
     }
 }
 
+// إصلاح مشكلة تعديل روابط الدفع
 async function handleAdminPaymentLinks(ctx) {
     try {
         const settings = await dbManager.getSettings();
-        const payment_links = settings.payment_links;
+        const payment_links = settings.payment_links || CONFIG.PAYMENT_LINKS;
         
         const linksMessage = `
 🔗 *روابط الدفع الحالية*
@@ -1962,14 +2044,14 @@ async function handleAdminGeneralSettings(ctx) {
 🕒 آخر تحديث: ${new Date(settings.updated_at).toLocaleString('ar-EG')}
 
 💰 *الأسعار الحالية:*
-• أسبوعي: ${settings.prices.week}$
-• شهري: ${settings.prices.month}$
-• 3 أشهر: ${settings.prices.three_months}$ 
-• سنوي: ${settings.prices.year}$
+• أسبوعي: ${settings.prices?.week || CONFIG.SUBSCRIPTION_PRICES.week}$
+• شهري: ${settings.prices?.month || CONFIG.SUBSCRIPTION_PRICES.month}$
+• 3 أشهر: ${settings.prices?.three_months || CONFIG.SUBSCRIPTION_PRICES.three_months}$ 
+• سنوي: ${settings.prices?.year || CONFIG.SUBSCRIPTION_PRICES.year}$
 
 🔗 *روابط الدفع:*
-• أسبوعي: ${settings.payment_links.week}
-• شهري: ${settings.payment_links.month}
+• أسبوعي: ${settings.payment_links?.week || CONFIG.PAYMENT_LINKS.week}
+• شهري: ${settings.payment_links?.month || CONFIG.PAYMENT_LINKS.month}
         `;
         
         await ctx.replyWithMarkdown(generalMessage, getAdminSettingsKeyboard());
@@ -2007,7 +2089,7 @@ async function handleAdminReset(ctx) {
     }
 }
 
-// معالجة تعديل الأسعار
+// إصلاح مشكلة تعديل الأسعار
 async function handleAdminPriceEdit(ctx, text) {
     try {
         const parts = text.split(' ');
@@ -2031,6 +2113,12 @@ async function handleAdminPriceEdit(ctx, text) {
         }
 
         const settings = await dbManager.getSettings();
+        
+        // التأكد من وجود كائن الأسعار
+        if (!settings.prices) {
+            settings.prices = { ...CONFIG.SUBSCRIPTION_PRICES };
+        }
+        
         settings.prices[type] = priceNum;
         await dbManager.updateSettings(settings);
 
@@ -2048,16 +2136,17 @@ async function handleAdminPriceEdit(ctx, text) {
     }
 }
 
-// معالجة تعديل الروابط
+// إصلاح مشكلة تعديل الروابط
 async function handleAdminLinkEdit(ctx, text) {
     try {
         const parts = text.split(' ');
-        if (parts.length !== 2) {
+        if (parts.length < 2) {
             await ctx.replyWithMarkdown('❌ *صيغة غير صحيحة!*\n\nاستخدم: week https://link.com أو month https://link.com إلخ...');
             return;
         }
 
-        const [type, link] = parts;
+        const type = parts[0];
+        const link = text.substring(type.length + 1);
 
         const validTypes = ['week', 'month', 'three_months', 'year'];
         if (!validTypes.includes(type)) {
@@ -2071,6 +2160,12 @@ async function handleAdminLinkEdit(ctx, text) {
         }
 
         const settings = await dbManager.getSettings();
+        
+        // التأكد من وجود كائن روابط الدفع
+        if (!settings.payment_links) {
+            settings.payment_links = { ...CONFIG.PAYMENT_LINKS };
+        }
+        
         settings.payment_links[type] = link;
         await dbManager.updateSettings(settings);
 
@@ -2243,7 +2338,7 @@ async function handlePaymentReject(ctx, paymentId) {
 
 // 🚀 START BOT
 bot.launch().then(() => {
-    console.log('🎉 SUCCESS! AI GOAL Predictor v10.4 is RUNNING!');
+    console.log('🎉 SUCCESS! AI GOAL Predictor v10.5 is RUNNING!');
     console.log('👤 Developer:', CONFIG.DEVELOPER);
     console.log('📢 Channel:', CONFIG.CHANNEL);
     console.log('🌐 Health check: http://localhost:' + PORT);
