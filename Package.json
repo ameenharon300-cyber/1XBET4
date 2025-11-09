@@ -1,0 +1,17 @@
+{
+  "name": "telegram-ai-goal-bot",
+  "version": "1.0.0",
+  "description": "AI Goal Predictor Telegram Bot",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.7",
+    "telegraf": "^4.15.3"
+  }
+}
